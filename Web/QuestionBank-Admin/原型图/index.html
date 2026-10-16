@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线题库系统</title>
+    <!-- 引入 Element Plus 样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <!-- 引入自定义样式 -->
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* 全局样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 头部样式 */
+        .header {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 60px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #409EFF;
+            margin-right: 40px;
+        }
+
+        .nav-menu {
+            flex: 1;
+            border-bottom: none;
+        }
+
+        .user-info {
+            margin-left: 20px;
+        }
+
+        /* 主要内容区域样式 */
+        .el-main {
+            padding: 20px;
+            background-color: #f5f7fa;
+            min-height: calc(100vh - 120px);
+        }
+
+        /* 内容容器 */
+        .content-container {
+            max-width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        /* 轮播图样式 */
+        .banner {
+            margin-bottom: 40px;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .banner-item {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #409EFF 0%, #36D1DC 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .banner-item h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+
+        /* 功能卡片样式 */
+        .feature-cards {
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            height: 200px;
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+        }
+
+        .card-content .el-icon {
+            font-size: 48px;
+            color: #409EFF;
+            margin-bottom: 20px;
+        }
+
+        /* 公共题库样式 */
+        .popular-questions {
+            margin-top: 40px;
+        }
+
+        .popular-questions h2 {
+            margin-bottom: 20px;
+            color: #303133;
+        }
+
+        .question-card {
+            margin-bottom: 20px;
+            transition: transform 0.3s;
+        }
+
+        .question-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .question-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .question-info {
+            padding: 15px 0;
+        }
+
+        .question-info h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .question-info p {
+            margin: 5px 0;
+            color: #606266;
+        }
+
+        /* 页脚样式 */
+        .footer {
+            background-color: #303133;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            margin-top: auto;
+        }
+
+        /* 响应式调整 */
+        @media screen and (max-width: 768px) {
+            .content-container {
+                max-width: 100%;
+                padding: 10px;
+            }
+
+            .banner-item h2 {
+                font-size: 24px;
+            }
+        }
+
+        /* 题库预览样式 */
+        .bank-preview {
+            padding: 20px;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .preview-info {
+            padding: 0 10px;
+        }
+
+        .preview-item {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .preview-item .label {
+            font-weight: bold;
+            color: #606266;
+            margin-right: 10px;
+        }
+
+        .preview-item .value {
+            color: #303133;
+        }
+
+        /* 题目预览样式 */
+        .preview-questions {
+            margin-top: 30px;
+            border-top: 1px solid #EBEEF5;
+            padding-top: 20px;
+        }
+
+        .preview-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #303133;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 10px 0;
+            z-index: 1;
+        }
+
+        .question-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .question-item {
+            background: #f5f7fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .question-type {
+            color: #409EFF;
+            font-weight: bold;
+        }
+
+        .question-content {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #303133;
+        }
+
+        .question-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .option-item {
+            padding: 8px 12px;
+            background: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #606266;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航栏 -->
+        <el-header class="header">
+            <div class="logo">在线题库系统</div>
+            <el-menu mode="horizontal" :router="true" class="nav-menu" :default-active="'1'">
+                <el-menu-item index="1">首页</el-menu-item>
+                <el-menu-item index="2" @click="goToQuestionBank">题库管理</el-menu-item>
+            </el-menu>
+            <div class="user-info">
+                <el-button type="primary">登录</el-button>
+                <el-button>注册</el-button>
+            </div>
+        </el-header>
+
+        <!-- 主要内容区域 -->
+        <el-main>
+            <div class="content-container">
+                <!-- 轮播图 -->
+                <el-carousel :interval="4000" type="card" height="400px" class="banner">
+                    <el-carousel-item v-for="item in 4" :key="item">
+                        <div class="banner-item">
+                            <h2>欢迎使用在线题库系统</h2>
+                            <p>随时随地，轻松学习</p>
+                        </div>
+                    </el-carousel-item>
+                </el-carousel>
+
+                <!-- 功能卡片 -->
+                <el-row :gutter="20" class="feature-cards">
+                    <el-col :span="8">
+                        <el-card class="feature-card" @click="goToQuestionBank">
+                            <template #header>
+                                <div class="card-header">题库管理</div>
+                            </template>
+                            <div class="card-content">
+                                <el-icon><Collection /></el-icon>
+                                <p>管理您的题库，添加、编辑和删除题目</p>
+                            </div>
+                        </el-card>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-card class="feature-card" @click="goToStatistics">
+                            <template #header>
+                                <div class="card-header">学习统计</div>
+                            </template>
+                            <div class="card-content">
+                                <el-icon><Histogram /></el-icon>
+                                <p>查看学习进度，分析学习效果</p>
+                            </div>
+                        </el-card>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-card class="feature-card" @click="goToWrongQuestions">
+                            <template #header>
+                                <div class="card-header">错题本</div>
+                            </template>
+                            <div class="card-content">
+                                <el-icon><Notebook /></el-icon>
+                                <p>收集错题，针对性复习</p>
+                            </div>
+                        </el-card>
+                    </el-col>
+                </el-row>
+
+                <!-- 公共题库 -->
+                <div class="popular-questions">
+                    <h2>公共题库</h2>
+                    <el-row :gutter="20">
+                        <el-col :span="8" v-for="bank in popularBanks" :key="bank.id">
+                            <el-card class="question-card" @click="showBankPreview(bank)">
+                                <img :src="bank.image" class="question-image">
+                                <div class="question-info">
+                                    <h3>{{ bank.name }}</h3>
+                                    <p>{{ bank.description }}</p>
+                                    <el-tag size="small" :type="getDifficultyType(bank.difficulty)">
+                                        {{ bank.difficulty }}
+                                    </el-tag>
+                                    <span class="question-count">{{ bank.questionCount }}题</span>
+                                </div>
+                            </el-card>
+                        </el-col>
+                    </el-row>
+                </div>
+
+                <!-- 题库预览对话框 -->
+                <el-dialog
+                    v-model="previewDialogVisible"
+                    :title="selectedBank?.name"
+                    width="800px"
+                    destroy-on-close
+                >
+                    <div class="bank-preview">
+                        <img :src="selectedBank?.image" class="preview-image">
+                        <div class="preview-info">
+                            <div class="preview-item">
+                                <span class="label">题目数量：</span>
+                                <span class="value">{{ selectedBank?.questionCount }}题</span>
+                            </div>
+                            <div class="preview-item">
+                                <span class="label">难度等级：</span>
+                                <el-tag size="small" :type="getDifficultyType(selectedBank?.difficulty)">
+                                    {{ selectedBank?.difficulty }}
+                                </el-tag>
+                            </div>
+                            <div class="preview-item">
+                                <span class="label">题库简介：</span>
+                                <span class="value">{{ selectedBank?.description }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 题目预览部分 -->
+                        <div class="preview-questions">
+                            <div class="preview-title">题目预览</div>
+                            <div class="question-list">
+                                <div v-for="(question, index) in selectedBank?.previewQuestions" :key="index" class="question-item">
+                                    <div class="question-header">
+                                        <span class="question-type">{{ question.type }}</span>
+                                        <span class="question-difficulty">
+                                            <el-tag size="small" :type="getDifficultyType(question.difficulty)">
+                                                {{ question.difficulty }}
+                                            </el-tag>
+                                        </span>
+                                    </div>
+                                    <div class="question-content">{{ question.content }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <template #footer>
+                        <span class="dialog-footer">
+                            <el-button @click="previewDialogVisible = false">取消</el-button>
+                            <el-button type="primary" @click="goToQuestionDetail(selectedBank?.id)">
+                                进入题库
+                            </el-button>
+                        </span>
+                    </template>
+                </el-dialog>
+            </div>
+        </el-main>
+
+        <!-- 页脚 -->
+        <el-footer class="footer">
+            <p>© 2024 在线题库系统 版权所有</p>
+        </el-footer>
+    </div>
+
+    <!-- 引入 Vue 3 -->
+    <script src="https://unpkg.com/vue@3"></script>
+    <!-- 引入 Element Plus -->
+    <script src="https://unpkg.com/element-plus"></script>
+    <!-- 引入图标 -->
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+    <script>
+        const { createApp, ref, computed } = Vue
+        const app = createApp({
+            setup() {
+                // 题库数据集合
+                const allBanks = ref([
+                    {
+                        id: 1,
+                        name: '高等数学基础题库',
+                        description: '涵盖微积分、线性代数等基础知识，适合大一新生学习使用。',
+                        difficulty: '中等',
+                        questionCount: 100,
+                        viewCount: 1234,
+                        starCount: 56,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/mathematics-concept-illustration_114360-3872.jpg'
+                    },
+                    {
+                        id: 2,
+                        name: '线性代数练习题库',
+                        description: '矩阵运算、特征值等核心概念，包含大量经典例题。',
+                        difficulty: '简单',
+                        questionCount: 50,
+                        viewCount: 856,
+                        starCount: 32,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/math-background-with-formulas_23-2148157755.jpg'
+                    },
+                    {
+                        id: 3,
+                        name: '概率论与数理统计',
+                        description: '概率分布、假设检验等统计方法，适合考研复习使用。',
+                        difficulty: '困难',
+                        questionCount: 80,
+                        viewCount: 2345,
+                        starCount: 89,
+                        isPublic: false,
+                        image: 'https://img.freepik.com/free-vector/math-background-with-formulas_23-2148157756.jpg'
+                    },
+                    {
+                        id: 4,
+                        name: '考研数学真题精选',
+                        description: '近十年考研数学真题，包含详细解析',
+                        difficulty: '困难',
+                        questionCount: 200,
+                        viewCount: 3456,
+                        starCount: 120,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/math-background-with-formulas_23-2148157757.jpg'
+                    },
+                    {
+                        id: 5,
+                        name: '大学物理实验题库',
+                        description: '涵盖力学、电磁学、光学等实验题目',
+                        difficulty: '中等',
+                        questionCount: 150,
+                        viewCount: 1789,
+                        starCount: 67,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/physics-background-with-formulas_23-2148157758.jpg'
+                    },
+                    {
+                        id: 6,
+                        name: '计算机基础题库',
+                        description: '数据结构、算法、操作系统等基础知识',
+                        difficulty: '中等',
+                        questionCount: 180,
+                        viewCount: 2567,
+                        starCount: 98,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg'
+                    }
+                ])
+
+                // 公共题库数据
+                const popularBanks = ref([
+                    {
+                        id: 1,
+                        name: '考研数学真题精选',
+                        description: '近十年考研数学真题，包含详细解析',
+                        difficulty: '困难',
+                        questionCount: 200,
+                        viewCount: 3456,
+                        starCount: 120,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/math-background-with-formulas_23-2148157757.jpg',
+                        previewQuestions: [
+                            {
+                                type: '单选题',
+                                difficulty: '困难',
+                                content: '设函数f(x)在区间[0,1]上连续，且f(0)=f(1)=0，证明：存在ξ∈(0,1)，使得f\'(ξ)=0。',
+                                options: [
+                                    { key: 'A', content: '使用罗尔定理' },
+                                    { key: 'B', content: '使用拉格朗日中值定理' },
+                                    { key: 'C', content: '使用柯西中值定理' },
+                                    { key: 'D', content: '使用泰勒公式' }
+                                ]
+                            },
+                            {
+                                type: '多选题',
+                                difficulty: '中等',
+                                content: '以下哪些是矩阵的特征值性质？',
+                                options: [
+                                    { key: 'A', content: '特征值的和等于矩阵的迹' },
+                                    { key: 'B', content: '特征值的积等于矩阵的行列式' },
+                                    { key: 'C', content: '特征向量线性无关' },
+                                    { key: 'D', content: '特征值都是实数' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        name: '大学物理实验题库',
+                        description: '涵盖力学、电磁学、光学等实验题目',
+                        difficulty: '中等',
+                        questionCount: 150,
+                        viewCount: 1789,
+                        starCount: 67,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/physics-background-with-formulas_23-2148157758.jpg',
+                        previewQuestions: [
+                            {
+                                type: '单选题',
+                                difficulty: '中等',
+                                content: '在测量重力加速度的实验中，以下哪个因素不会影响测量结果？',
+                                options: [
+                                    { key: 'A', content: '空气阻力' },
+                                    { key: 'B', content: '测量时间' },
+                                    { key: 'C', content: '实验地点' },
+                                    { key: 'D', content: '实验器材的颜色' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        name: '计算机基础题库',
+                        description: '数据结构、算法、操作系统等基础知识',
+                        difficulty: '中等',
+                        questionCount: 180,
+                        viewCount: 2567,
+                        starCount: 98,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg',
+                        previewQuestions: [
+                            {
+                                type: '单选题',
+                                difficulty: '简单',
+                                content: '以下哪种数据结构是先进后出（LIFO）的？',
+                                options: [
+                                    { key: 'A', content: '队列' },
+                                    { key: 'B', content: '栈' },
+                                    { key: 'C', content: '链表' },
+                                    { key: 'D', content: '树' }
+                                ]
+                            }
+                        ]
+                    }
+                ])
+
+                // 获取难度标签类型
+                const getDifficultyType = (difficulty) => {
+                    const types = {
+                        '简单': 'success',
+                        '中等': 'warning',
+                        '困难': 'danger'
+                    }
+                    return types[difficulty] || 'info'
+                }
+
+                // 页面跳转
+                const goToQuestionBank = () => {
+                    window.location.href = 'question-bank.html'
+                }
+
+                const goToStatistics = () => {
+                    window.location.href = 'statistics.html'
+                }
+
+                const goToWrongQuestions = () => {
+                    window.location.href = 'wrong-questions.html'
+                }
+
+                const goToQuestionDetail = (bankId) => {
+                    window.location.href = `bank-detail.html?id=${bankId}&from=popular`
+                }
+
+                // 预览对话框
+                const previewDialogVisible = ref(false)
+                const selectedBank = ref(null)
+
+                // 显示题库预览
+                const showBankPreview = (bank) => {
+                    selectedBank.value = bank
+                    previewDialogVisible.value = true
+                }
+
+                return {
+                    popularBanks,
+                    getDifficultyType,
+                    previewDialogVisible,
+                    selectedBank,
+                    showBankPreview,
+                    goToQuestionBank,
+                    goToStatistics,
+                    goToWrongQuestions,
+                    goToQuestionDetail
+                }
+            }
+        })
+
+        // 注册所有图标
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component)
+        }
+
+        // 使用 Element Plus
+        app.use(ElementPlus)
+
+        // 挂载应用
+        app.mount('#app')
+    </script>
+</body>
+</html> 

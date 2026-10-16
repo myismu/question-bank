@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建题库 - 在线题库系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+        }
+
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 60px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #409EFF;
+            margin-right: 40px;
+        }
+
+        .nav-menu {
+            flex: 1;
+            border-bottom: none;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            max-width: 80%;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+            position: relative;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .form-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #303133;
+            margin-bottom: 30px;
+            text-align: center;
+            padding-top: 10px;
+        }
+
+        .steps-container {
+            margin-bottom: 30px;
+        }
+
+        .step-content {
+            margin-top: 20px;
+        }
+
+        .step-actions {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .upload-demo {
+            width: 100%;
+        }
+
+        .upload-demo .el-upload {
+            width: 100%;
+        }
+
+        .upload-demo .el-upload-dragger {
+            width: 100%;
+            height: 200px;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .question-input-container {
+            display: flex;
+            gap: 30px;
+            margin-top: 10px;
+            min-height: 600px;
+            width: 100%;
+        }
+
+        .question-input {
+            flex: 1.5;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .question-preview {
+            flex: 1;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .question-input .el-textarea__inner {
+            height: 100%;
+            min-height: 580px;
+            font-size: 14px;
+            line-height: 1.6;
+            font-family: 'Courier New', Courier, monospace;
+            width: 100%;
+        }
+
+        .question-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+
+        .question-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #ebeef5;
+        }
+
+        .question-title {
+            font-weight: bold;
+            color: #303133;
+        }
+
+        .question-options {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .question-option {
+            margin: 5px 0;
+            color: #606266;
+        }
+
+        .question-answer {
+            margin: 10px 0;
+            padding: 8px;
+            background-color: #f0f9eb;
+            border-radius: 4px;
+            color: #67c23a;
+        }
+
+        .question-explanation {
+            margin: 10px 0;
+            padding: 8px;
+            background-color: #f4f4f5;
+            border-radius: 4px;
+            color: #909399;
+        }
+
+        .import-tip {
+            margin-bottom: 10px;
+        }
+
+        .format-tip-content {
+            padding: 10px;
+        }
+
+        .format-tip-content h4 {
+            margin: 0 0 10px 0;
+            color: #303133;
+        }
+
+        .format-tip-content p {
+            margin: 5px 0;
+            color: #606266;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .format-tip-popover {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航栏 -->
+        <el-header class="header">
+            <div class="logo">在线题库系统</div>
+            <el-menu mode="horizontal" :router="true" class="nav-menu" >
+                <el-menu-item index="1" @click="goToHome">首页</el-menu-item>
+                <el-menu-item index="2" @click="goToQuestionBank">题库管理</el-menu-item>
+            </el-menu>
+        </el-header>
+
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <div class="form-container">
+                <el-button @click="goToQuestionBank" icon="Back">返回题库管理</el-button>
+                <h2 class="form-title">创建新题库</h2>
+                
+                <!-- 步骤条 -->
+                <div class="steps-container">
+                    <el-steps :active="activeStep" finish-status="success" simple>
+                        <el-step title="题目录入" description="导入或输入题目"></el-step>
+                        <el-step title="题库信息" description="填写题库基本信息"></el-step>
+                    </el-steps>
+                </div>
+
+                <!-- 步骤内容 -->
+                <div class="step-content">
+                    <!-- 第一步：题目录入 -->
+                    <div v-if="activeStep === 0">
+                        <el-form-item label="导入方式">
+                            <el-radio-group v-model="importType">
+                                <el-radio label="text">文本导入</el-radio>
+                                <el-radio label="file">文件导入</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+
+                        <!-- 文本导入 -->
+                        <el-form-item v-if="importType === 'text'" label="题目文本">
+                            <div class="import-tip">
+                                <el-popover
+                                    placement="right"
+                                    :width="400"
+                                    trigger="hover"
+                                    popper-class="format-tip-popover"
+                                >
+                                    <template #reference>
+                                        <el-button type="primary" plain size="small">
+                                            <el-icon><question-filled /></el-icon>
+                                            查看格式说明
+                                        </el-button>
+                                    </template>
+                                    <template #default>
+                                        <div class="format-tip-content">
+                                            <h4>格式说明</h4>
+                                            <p>1. 试题需要有序号，支持：1. 或1、</p>
+                                            <p>2. 答案、解析后面要有冒号，如：答案：</p>
+                                            <p>3. 选项后面需要点或顿号，如：A. 或A、</p>
+                                            <p>4. 答案另起一行，如：答案：A</p>
+                                            <p>5. 填空题有多个答案用 | 隔开，如：春 | 夏 | 秋</p>
+                                            <p>6. 判断题支持：正确、错误、对、错</p>
+                                            <p>7. 简答题等，答案中如有（1）（2）等，编辑成一行导入，不要分段</p>
+                                        </div>
+                                    </template>
+                                </el-popover>
+                            </div>
+                            <div class="question-input-container">
+                                <div class="question-input">
+                                    <el-input
+                                        v-model="questionText"
+                                        type="textarea"
+                                        :rows="20"
+                                        placeholder="请输入题目文本，格式如下：
+
+1.驾驶人有下列哪种违法行为一次记6分
+A、使用其他车辆行驶证
+B、饮酒后驾驶机动车
+C、车速超过规定时速50%以上
+D、违法占用应急车道行驶
+答案:D
+解析:请仔细阅读交规
+
+2.驾驶人有下列哪种违法行为一次记6分？
+A、使用其他车辆行驶证
+B、饮酒后驾驶机动车
+C、车速超过规定时速50%以上
+D、违法占用应急车道行驶
+答案:ABCD
+解析:请仔细阅读交规
+
+3.国际象棋起源于英国吗？
+答案:对
+解析:无
+
+4.我国古典四大名著是（）（）（）（）
+答案:红楼梦|水浒传|三国演义|西游记
+解析:无
+
+5.如何保持身体健康？
+答案:规律饮食、坚持锻炼，早睡早起，定期体检。
+解析:无"
+                                    ></el-input>
+                                </div>
+                                <div class="question-preview">
+                                    <template v-if="parsedQuestions.length > 0">
+                                        <div v-for="(question, index) in parsedQuestions" :key="index" class="question-item">
+                                            <div class="question-header">
+                                                <span class="question-title">{{ index + 1 }}. {{ question.title }}</span>
+                                                <el-tag size="small" :type="getQuestionTypeTag(question.type)">
+                                                    {{ getQuestionTypeName(question.type) }}
+                                                </el-tag>
+                                            </div>
+                                            <div v-if="question.options" class="question-options">
+                                                <div v-for="(option, key) in question.options" :key="key" class="question-option">
+                                                    {{ key }}. {{ option }}
+                                                </div>
+                                            </div>
+                                            <div class="question-answer">
+                                                <strong>答案：</strong>{{ question.answer }}
+                                            </div>
+                                            <div v-if="question.explanation" class="question-explanation">
+                                                <strong>解析：</strong>{{ question.explanation }}
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <el-empty v-else description="暂无解析的题目"></el-empty>
+                                </div>
+                            </div>
+                        </el-form-item>
+
+                        <!-- 文件导入 -->
+                        <el-form-item v-if="importType === 'file'" label="题目文件">
+                            <el-upload
+                                class="upload-demo"
+                                drag
+                                action="#"
+                                :auto-upload="false"
+                                :show-file-list="true"
+                                :on-change="handleFileChange"
+                                :limit="1"
+                                accept=".txt,.doc,.docx"
+                            >
+                                <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                                <div class="el-upload__text">
+                                    将文件拖到此处，或<em>点击上传</em>
+                                </div>
+                                <template #tip>
+                                    <div class="el-upload__tip">
+                                        支持 txt、doc、docx 格式，文件大小不超过 10MB
+                                    </div>
+                                </template>
+                            </el-upload>
+                        </el-form-item>
+
+                        <div class="step-actions">
+                            <el-button @click="goToQuestionBank">取消</el-button>
+                            <el-button type="primary" @click="nextStep">下一步</el-button>
+                        </div>
+                    </div>
+
+                    <!-- 第二步：题库信息 -->
+                    <div v-if="activeStep === 1">
+                        <el-form 
+                            ref="formRef"
+                            :model="formData"
+                            :rules="rules"
+                            label-width="100px"
+                            label-position="right"
+                        >
+                            <el-form-item label="题库名称" prop="name">
+                                <el-input v-model="formData.name" placeholder="请输入题库名称"></el-input>
+                            </el-form-item>
+
+                            <el-form-item label="题库描述" prop="description">
+                                <el-input
+                                    v-model="formData.description"
+                                    type="textarea"
+                                    :rows="4"
+                                    placeholder="请输入题库描述"
+                                ></el-input>
+                            </el-form-item>
+
+                            <el-form-item label="难度等级" prop="difficulty">
+                                <el-select v-model="formData.difficulty" placeholder="请选择难度等级" style="width: 100%">
+                                    <el-option label="简单" value="简单"></el-option>
+                                    <el-option label="中等" value="中等"></el-option>
+                                    <el-option label="困难" value="困难"></el-option>
+                                </el-select>
+                            </el-form-item>
+
+                            <el-form-item label="题库封面" prop="coverImage">
+                                <el-upload
+                                    class="upload-demo"
+                                    drag
+                                    action="#"
+                                    :auto-upload="false"
+                                    :show-file-list="false"
+                                    :on-change="handleImageChange"
+                                >
+                                    <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                                    <div class="el-upload__text">
+                                        将文件拖到此处，或<em>点击上传</em>
+                                    </div>
+                                    <template #tip>
+                                        <div class="el-upload__tip">
+                                            支持 jpg/png 格式，建议尺寸 800x400
+                                        </div>
+                                    </template>
+                                </el-upload>
+                                <img v-if="formData.coverImage" :src="formData.coverImage" class="preview-image">
+                            </el-form-item>
+
+                            <el-form-item label="题库类型" prop="type">
+                                <el-radio-group v-model="formData.type">
+                                    <el-radio label="public">公开题库</el-radio>
+                                    <el-radio label="private">私有题库</el-radio>
+                                </el-radio-group>
+                            </el-form-item>
+
+                            <el-form-item label="标签" prop="tags">
+                                <el-select
+                                    v-model="formData.tags"
+                                    multiple
+                                    filterable
+                                    allow-create
+                                    default-first-option
+                                    placeholder="请选择或输入标签"
+                                    style="width: 100%"
+                                >
+                                    <el-option
+                                        v-for="tag in tagOptions"
+                                        :key="tag"
+                                        :label="tag"
+                                        :value="tag"
+                                    ></el-option>
+                                </el-select>
+                            </el-form-item>
+
+                            <div class="step-actions">
+                                <el-button @click="prevStep">上一步</el-button>
+                                <el-button type="primary" @click="submitForm">创建题库</el-button>
+                            </div>
+                        </el-form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+    <script>
+        const { createApp, ref, watch } = Vue
+        const { ElMessage } = ElementPlus
+
+        const app = createApp({
+            setup() {
+                const formRef = ref(null)
+                const activeStep = ref(0)
+                const formData = ref({
+                    name: '',
+                    description: '',
+                    difficulty: '',
+                    coverImage: '',
+                    type: 'public',
+                    tags: []
+                })
+
+                const tagOptions = [
+                    '数学',
+                    '物理',
+                    '化学',
+                    '生物',
+                    '计算机',
+                    '英语',
+                    '语文',
+                    '历史',
+                    '地理'
+                ]
+
+                const rules = {
+                    name: [
+                        { required: true, message: '请输入题库名称', trigger: 'blur' },
+                        { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+                    ],
+                    description: [
+                        { required: true, message: '请输入题库描述', trigger: 'blur' },
+                        { min: 10, max: 500, message: '长度在 10 到 500 个字符', trigger: 'blur' }
+                    ],
+                    difficulty: [
+                        { required: true, message: '请选择难度等级', trigger: 'change' }
+                    ],
+                    type: [
+                        { required: true, message: '请选择题库类型', trigger: 'change' }
+                    ]
+                }
+
+                const importType = ref('text')
+                const questionText = ref('')
+                const parsedQuestions = ref([])
+
+                // 解析题目文本
+                const parseQuestions = (text) => {
+                    const questions = []
+                    const lines = text.split('\n')
+                    let currentQuestion = null
+
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim()
+                        if (!line) continue
+
+                        // 跳过题型描述行（兼容老格式）
+                        if (["单选题","多选题","判断题","填空题","简答题"].includes(line)) continue
+
+                        // 检测新题目开始
+                        if (/^\d+[.、]/.test(line)) {
+                            if (currentQuestion) {
+                                // 题型自动识别
+                                currentQuestion.type = autoDetectType(currentQuestion)
+                                questions.push(currentQuestion)
+                            }
+                            const title = line.replace(/^\d+[.、]/, '').trim()
+                            currentQuestion = {
+                                title: title,
+                                options: {},
+                                answer: '',
+                                explanation: ''
+                            }
+                            continue
+                        }
+
+                        if (!currentQuestion) continue
+
+                        // 检测选项
+                        if (/^[A-Z][.、]/.test(line)) {
+                            const [key, value] = line.split(/[.、]/).map(s => s.trim())
+                            currentQuestion.options[key] = value
+                        }
+
+                        // 检测答案
+                        if (line.startsWith('答案:')) {
+                            currentQuestion.answer = line.replace('答案:', '').trim()
+                        }
+
+                        // 检测解析
+                        if (line.startsWith('解析:')) {
+                            currentQuestion.explanation = line.replace('解析:', '').trim()
+                        }
+                    }
+
+                    if (currentQuestion) {
+                        currentQuestion.type = autoDetectType(currentQuestion)
+                        questions.push(currentQuestion)
+                    }
+
+                    return questions
+                }
+
+                // 全自动题型识别
+                const autoDetectType = (q) => {
+                    // 判断题：答案为"对/错/正确/错误"
+                    if (["对","错","正确","错误"].includes(q.answer)) {
+                        return 'judge'
+                    }
+                    // 填空题：题干含有括号或答案含有|
+                    if (/（.*?）|\(.*?\)|（  ）|\(  \)/.test(q.title) || q.answer.includes('|')) {
+                        return 'fill'
+                    }
+                    // 有选项
+                    const optionKeys = Object.keys(q.options)
+                    if (optionKeys.length > 0) {
+                        // 多选题：答案为多个大写字母
+                        if (/^[A-Z]{2,}$/.test(q.answer.replace(/,/g, '')) || q.answer.includes(',')) {
+                            return 'multiple'
+                        }
+                        // 单选题：答案为单个大写字母
+                        if (/^[A-Z]$/.test(q.answer)) {
+                            return 'single'
+                        }
+                    }
+                    // 简答题：默认
+                    return 'essay'
+                }
+
+                // 监听题目文本变化
+                watch(questionText, (newValue) => {
+                    if (newValue) {
+                        parsedQuestions.value = parseQuestions(newValue)
+                    } else {
+                        parsedQuestions.value = []
+                    }
+                })
+
+                // 处理文件上传
+                const handleFileChange = (file) => {
+                    const reader = new FileReader()
+                    reader.onload = (e) => {
+                        questionText.value = e.target.result
+                    }
+                    reader.readAsText(file.raw)
+                }
+
+                // 获取题目类型标签样式
+                const getQuestionTypeTag = (type) => {
+                    const types = {
+                        single: 'primary',
+                        multiple: 'success',
+                        judge: 'warning',
+                        fill: 'info',
+                        essay: 'danger'
+                    }
+                    return types[type] || 'info'
+                }
+
+                // 获取题目类型名称
+                const getQuestionTypeName = (type) => {
+                    const types = {
+                        single: '单选题',
+                        multiple: '多选题',
+                        judge: '判断题',
+                        fill: '填空题',
+                        essay: '简答题'
+                    }
+                    return types[type] || '未知类型'
+                }
+
+                const handleImageChange = (file) => {
+                    const reader = new FileReader()
+                    reader.onload = (e) => {
+                        formData.value.coverImage = e.target.result
+                    }
+                    reader.readAsDataURL(file.raw)
+                }
+
+                const nextStep = () => {
+                    if (parsedQuestions.value.length === 0) {
+                        ElMessage.warning('请至少添加一道题目')
+                        return
+                    }
+                    activeStep.value++
+                }
+
+                const prevStep = () => {
+                    activeStep.value--
+                }
+
+                const submitForm = async () => {
+                    if (!formRef.value) return
+                    
+                    try {
+                        await formRef.value.validate()
+                        // TODO: 这里添加实际的提交逻辑
+                        ElMessage.success('题库创建成功！')
+                        goToQuestionBank()
+                    } catch (error) {
+                        ElMessage.error('请检查表单填写是否正确')
+                    }
+                }
+
+                const goToHome = () => {
+                    window.location.href = 'index.html'
+                }
+
+                const goToQuestionBank = () => {
+                    window.location.href = 'question-bank.html'
+                }
+
+                return {
+                    formRef,
+                    formData,
+                    rules,
+                    tagOptions,
+                    handleImageChange,
+                    submitForm,
+                    goToHome,
+                    goToQuestionBank,
+                    importType,
+                    questionText,
+                    parsedQuestions,
+                    handleFileChange,
+                    getQuestionTypeTag,
+                    getQuestionTypeName,
+                    activeStep,
+                    nextStep,
+                    prevStep
+                }
+            }
+        })
+
+        // 注册所有图标
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component)
+        }
+
+        app.use(ElementPlus)
+        app.mount('#app')
+    </script>
+</body>
+</html> 

@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模拟考试 - 在线题库系统</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <style>
+        /* 全局样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 头部样式 */
+        .header {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 60px;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #409EFF;
+            margin-right: 40px;
+        }
+
+        .nav-menu {
+            flex: 1;
+            border-bottom: none;
+        }
+
+        .user-info {
+            margin-left: 20px;
+        }
+
+        /* 主要内容区域样式 */
+        .el-main {
+            padding: 20px;
+            background-color: #f5f7fa;
+            min-height: calc(100vh - 120px);
+        }
+
+        /* 内容容器 */
+        .content-container {
+            max-width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        /* 考试设置样式 */
+        .exam-settings {
+            padding: 20px;
+        }
+
+        .exam-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .bank-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f7fa;
+            border-radius: 8px;
+        }
+
+        .bank-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .bank-meta {
+            display: flex;
+            gap: 20px;
+            color: #666;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* 考试界面样式 */
+        .exam-interface {
+            display: flex;
+            gap: 20px;
+        }
+
+        .question-area {
+            flex: 1;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-type {
+            color: #409EFF;
+            font-weight: bold;
+        }
+
+        .question-content {
+            font-size: 18px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-item {
+            padding: 10px 15px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .option-item:hover {
+            background-color: #f5f7fa;
+        }
+
+        .option-item.selected {
+            background-color: #ecf5ff;
+            border-color: #409EFF;
+        }
+
+        .sidebar {
+            width: 300px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .timer {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f7fa;
+            border-radius: 8px;
+        }
+
+        .timer-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: #409EFF;
+            margin-bottom: 10px;
+        }
+
+        .timer.warning {
+            background-color: #fef0f0;
+        }
+
+        .timer.warning .timer-text {
+            color: #f56c6c;
+        }
+
+        .question-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .question-number {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .question-number:hover {
+            background-color: #f5f7fa;
+        }
+
+        .question-number.current {
+            background-color: #409EFF;
+            color: #fff;
+            border-color: #409EFF;
+        }
+
+        .question-number.answered {
+            background-color: #67c23a;
+            color: #fff;
+            border-color: #67c23a;
+        }
+
+        /* 考试结果样式 */
+        .exam-result {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .result-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .score {
+            font-size: 48px;
+            color: #409EFF;
+            margin: 20px 0;
+        }
+
+        .result-details {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ebeef5;
+        }
+
+        /* 页脚样式 */
+        .footer {
+            background-color: #303133;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            margin-top: auto;
+        }
+
+        /* 响应式调整 */
+        @media screen and (max-width: 768px) {
+            .content-container {
+                max-width: 95%;
+            }
+
+            .exam-interface {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .question-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 顶部导航栏 -->
+        <el-header class="header">
+            <div class="logo">在线题库系统</div>
+            <el-menu mode="horizontal" :router="true" class="nav-menu" >
+                <el-menu-item index="1" @click="goToHome">首页</el-menu-item>
+                <el-menu-item index="2" @click="goToQuestionBank">题库管理</el-menu-item>
+            </el-menu>
+            <div class="user-info">
+                <el-button type="primary">登录</el-button>
+                <el-button>注册</el-button>
+            </div>
+        </el-header>
+
+        <!-- 主要内容区域 -->
+        <el-main>
+            <div class="content-container">
+                <!-- 考试设置界面 -->
+                <div v-if="!examStarted && !examFinished" class="exam-settings">
+                    <div class="bank-info">
+                        <div class="bank-title">{{ bankInfo.name }}</div>
+                        <div class="bank-meta">
+                            <div class="meta-item">
+                                <el-icon><Document /></el-icon>
+                                <span>题目总数：{{ bankInfo.questionCount }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <el-icon><Warning /></el-icon>
+                                <span>难度：{{ bankInfo.difficulty }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <el-form :model="examSettings" class="exam-form" v-if="showSettings">
+                        <el-form-item label="考试时长（分钟）">
+                            <el-input-number 
+                                v-model="examSettings.duration" 
+                                :min="30" 
+                                :max="180"
+                                :step="30"
+                            />
+                        </el-form-item>
+                        <el-form-item label="题目数量">
+                            <el-input-number 
+                                v-model="examSettings.questionCount" 
+                                :min="1" 
+                                :max="bankInfo.questions.length"
+                            />
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="startExam">开始考试</el-button>
+                            <el-button @click="goBack">返回题库</el-button>
+                        </el-form-item>
+                    </el-form>
+                    <div v-else class="loading-state">
+                        <el-skeleton :rows="3" animated />
+                    </div>
+                </div>
+
+                <!-- 考试界面 -->
+                <div v-else-if="examStarted && !examFinished" class="exam-interface">
+                    <div class="question-area">
+                        <div class="question-header">
+                            <div class="question-type">{{ currentQuestion.type }}</div>
+                            <el-button type="danger" @click="exitExam">退出考试</el-button>
+                        </div>
+                        <div class="question-content">{{ currentQuestion.content }}</div>
+                        <div class="answer-options">
+                            <div 
+                                v-for="option in currentQuestion.options" 
+                                :key="option.key"
+                                class="option-item"
+                                :class="{ 'selected': selectedAnswers[currentIndex] === option.key }"
+                                @click="selectAnswer(option.key)"
+                            >
+                                {{ option.key }}. {{ option.content }}
+                            </div>
+                        </div>
+                        <div class="question-actions" style="margin-top: 20px;">
+                            <el-button 
+                                type="primary" 
+                                @click="submitExam"
+                                :disabled="!isAllAnswered"
+                            >
+                                提交试卷
+                            </el-button>
+                        </div>
+                    </div>
+                    <div class="sidebar">
+                        <div class="timer" :class="{ 'warning': remainingTime < 300 }">
+                            <div class="timer-text">{{ formatTime(remainingTime) }}</div>
+                            <el-progress 
+                                :percentage="(remainingTime / (examSettings.duration * 60)) * 100"
+                                :format="() => ''"
+                            />
+                        </div>
+                        <div class="question-grid">
+                            <div 
+                                v-for="(answer, index) in selectedAnswers" 
+                                :key="index"
+                                class="question-number"
+                                :class="{
+                                    'current': currentIndex === index,
+                                    'answered': answer !== undefined
+                                }"
+                                @click="goToQuestion(index)"
+                            >
+                                {{ index + 1 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 考试结果界面 -->
+                <div v-else class="exam-result">
+                    <div class="result-title">考试结果</div>
+                    <div class="score">{{ examResult.score }}分</div>
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <span>总题数：</span>
+                            <span>{{ examSettings.questionCount }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>正确题数：</span>
+                            <span>{{ examResult.correctCount }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>错误题数：</span>
+                            <span>{{ examResult.wrongCount }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>未答题数：</span>
+                            <span>{{ examResult.unansweredCount }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span>用时：</span>
+                            <span>{{ formatTime(examSettings.duration * 60 - examResult.remainingTime) }}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 30px;">
+                        <el-button type="primary" @click="goBack">返回题库</el-button>
+                        <el-button @click="reviewExam">查看解析</el-button>
+                    </div>
+                </div>
+            </div>
+        </el-main>
+
+        <!-- 页脚 -->
+        <el-footer class="footer">
+            <p>© 2024 在线题库系统 版权所有</p>
+        </el-footer>
+    </div>
+
+    <!-- 引入 Vue 3 -->
+    <script src="https://unpkg.com/vue@3"></script>
+    <!-- 引入 Element Plus -->
+    <script src="https://unpkg.com/element-plus"></script>
+    <!-- 引入图标 -->
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+    <script>
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue
+        const { ElMessage, ElMessageBox } = ElementPlus
+        const app = createApp({
+            setup() {
+                // 题库数据
+                const allBanks = [
+                    {
+                        id: 1,
+                        name: '高等数学基础题库',
+                        description: '涵盖微积分、线性代数等基础知识，适合大一新生学习使用。',
+                        difficulty: '中等',
+                        questionCount: 100,
+                        viewCount: 1234,
+                        starCount: 56,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/mathematics-concept-illustration_114360-3872.jpg',
+                        questionTypes: ['单选题', '多选题', '判断题', '计算题'],
+                        questions: [
+                            {
+                                type: '单选题',
+                                content: '求函数 f(x) = x² + 2x + 1 的导数',
+                                options: [
+                                    { key: 'A', content: 'f\'(x) = 2x + 2' },
+                                    { key: 'B', content: 'f\'(x) = 2x + 1' },
+                                    { key: 'C', content: 'f\'(x) = x + 2' },
+                                    { key: 'D', content: 'f\'(x) = x + 1' }
+                                ]
+                            },
+                            {
+                                type: '多选题',
+                                content: '以下哪些是偶函数？',
+                                options: [
+                                    { key: 'A', content: 'f(x) = x²' },
+                                    { key: 'B', content: 'f(x) = cos(x)' },
+                                    { key: 'C', content: 'f(x) = x³' },
+                                    { key: 'D', content: 'f(x) = |x|' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        name: '线性代数练习题库',
+                        description: '矩阵运算、特征值等核心概念，包含大量经典例题。',
+                        difficulty: '简单',
+                        questionCount: 50,
+                        viewCount: 856,
+                        starCount: 32,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/math-background-with-formulas_23-2148157755.jpg',
+                        questionTypes: ['单选题', '多选题', '计算题'],
+                        questions: [
+                            {
+                                type: '单选题',
+                                content: '矩阵A的转置矩阵记作？',
+                                options: [
+                                    { key: 'A', content: 'A^T' },
+                                    { key: 'B', content: 'A^-1' },
+                                    { key: 'C', content: 'A*' },
+                                    { key: 'D', content: 'A^2' }
+                                ]
+                            },
+                            {
+                                type: '计算题',
+                                content: '计算矩阵 A = [1 2; 3 4] 的行列式',
+                                options: [
+                                    { key: 'A', content: 'det(A) = -2' },
+                                    { key: 'B', content: 'det(A) = 2' },
+                                    { key: 'C', content: 'det(A) = 5' },
+                                    { key: 'D', content: 'det(A) = -5' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 3,
+                        name: '概率论与数理统计',
+                        description: '概率分布、假设检验等统计方法，适合考研复习使用。',
+                        difficulty: '困难',
+                        questionCount: 80,
+                        viewCount: 2345,
+                        starCount: 89,
+                        isPublic: false,
+                        image: 'https://img.freepik.com/free-vector/math-background-with-formulas_23-2148157756.jpg',
+                        questionTypes: ['单选题', '多选题', '判断题', '计算题'],
+                        questions: [
+                            {
+                                type: '单选题',
+                                content: '正态分布的概率密度函数是？',
+                                options: [
+                                    { key: 'A', content: 'f(x) = (1/σ√2π)e^(-(x-μ)²/2σ²)' },
+                                    { key: 'B', content: 'f(x) = (1/σ)e^(-(x-μ)²/2σ²)' },
+                                    { key: 'C', content: 'f(x) = (1/√2π)e^(-(x-μ)²/2σ²)' },
+                                    { key: 'D', content: 'f(x) = e^(-(x-μ)²/2σ²)' }
+                                ]
+                            },
+                            {
+                                type: '判断题',
+                                content: '在正态分布中，均值等于中位数',
+                                options: [
+                                    { key: 'A', content: '正确' },
+                                    { key: 'B', content: '错误' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 4,
+                        name: '考研数学真题精选',
+                        description: '近十年考研数学真题，包含详细解析',
+                        difficulty: '困难',
+                        questionCount: 200,
+                        viewCount: 3456,
+                        starCount: 120,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/math-background-with-formulas_23-2148157757.jpg',
+                        questionTypes: ['单选题', '多选题', '计算题', '证明题'],
+                        questions: [
+                            {
+                                type: '单选题',
+                                content: '2023年考研数学一第1题：求极限 lim(x→0) (sinx-x)/x³',
+                                options: [
+                                    { key: 'A', content: '1/6' },
+                                    { key: 'B', content: '-1/6' },
+                                    { key: 'C', content: '1/3' },
+                                    { key: 'D', content: '-1/3' }
+                                ]
+                            },
+                            {
+                                type: '计算题',
+                                content: '2022年考研数学一第2题：计算定积分 ∫(0,π) xsinxdx',
+                                options: [
+                                    { key: 'A', content: 'π' },
+                                    { key: 'B', content: '2π' },
+                                    { key: 'C', content: 'π/2' },
+                                    { key: 'D', content: '2' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 5,
+                        name: '大学物理实验题库',
+                        description: '涵盖力学、电磁学、光学等实验题目',
+                        difficulty: '中等',
+                        questionCount: 150,
+                        viewCount: 1789,
+                        starCount: 67,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/physics-background-with-formulas_23-2148157758.jpg',
+                        questionTypes: ['单选题', '多选题', '实验题'],
+                        questions: [
+                            {
+                                type: '单选题',
+                                content: '在单摆实验中，摆长与周期的关系是？',
+                                options: [
+                                    { key: 'A', content: 'T ∝ √L' },
+                                    { key: 'B', content: 'T ∝ L' },
+                                    { key: 'C', content: 'T ∝ L²' },
+                                    { key: 'D', content: 'T ∝ 1/L' }
+                                ]
+                            },
+                            {
+                                type: '实验题',
+                                content: '测量光的折射率实验中，需要记录哪些数据？',
+                                options: [
+                                    { key: 'A', content: '入射角和折射角' },
+                                    { key: 'B', content: '入射角和反射角' },
+                                    { key: 'C', content: '折射角和反射角' },
+                                    { key: 'D', content: '入射角和出射角' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        id: 6,
+                        name: '计算机基础题库',
+                        description: '数据结构、算法、操作系统等基础知识',
+                        difficulty: '中等',
+                        questionCount: 180,
+                        viewCount: 2567,
+                        starCount: 98,
+                        isPublic: true,
+                        image: 'https://img.freepik.com/free-vector/programming-concept-illustration_114360-1351.jpg',
+                        questionTypes: ['单选题', '多选题', '编程题'],
+                        questions: [
+                            {
+                                type: '单选题',
+                                content: '以下哪种排序算法的时间复杂度是O(nlogn)？',
+                                options: [
+                                    { key: 'A', content: '快速排序' },
+                                    { key: 'B', content: '冒泡排序' },
+                                    { key: 'C', content: '插入排序' },
+                                    { key: 'D', content: '选择排序' }
+                                ]
+                            },
+                            {
+                                type: '编程题',
+                                content: '实现一个函数，判断一个字符串是否是回文串',
+                                options: [
+                                    { key: 'A', content: '使用双指针法' },
+                                    { key: 'B', content: '使用栈' },
+                                    { key: 'C', content: '使用递归' },
+                                    { key: 'D', content: '使用哈希表' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+
+                // 题库信息
+                const bankInfo = ref({
+                    id: null,
+                    name: '',
+                    questionCount: 0,
+                    difficulty: '',
+                    questions: []
+                })
+
+                // 考试设置
+                const examSettings = ref({
+                    duration: 60,
+                    questionCount: 10
+                })
+
+                // 是否显示设置界面
+                const showSettings = computed(() => {
+                    return bankInfo.value.questions && bankInfo.value.questions.length > 0
+                })
+
+                // 考试状态
+                const examStarted = ref(false)
+                const examFinished = ref(false)
+                const currentIndex = ref(0)
+                const selectedAnswers = ref([])
+                const remainingTime = ref(0)
+                let timer = null
+
+                // 考试结果
+                const examResult = ref({
+                    score: 0,
+                    correctCount: 0,
+                    wrongCount: 0,
+                    unansweredCount: 0,
+                    remainingTime: 0
+                })
+
+                // 当前题目
+                const currentQuestion = computed(() => {
+                    if (!bankInfo.value.questions.length) return {}
+                    return bankInfo.value.questions[currentIndex.value]
+                })
+
+                // 是否所有题目都已作答
+                const isAllAnswered = computed(() => {
+                    return selectedAnswers.value.every(answer => answer !== undefined)
+                })
+
+                // 格式化时间
+                const formatTime = (seconds) => {
+                    const minutes = Math.floor(seconds / 60)
+                    const remainingSeconds = seconds % 60
+                    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
+                }
+
+                // 获取题库信息
+                const getBankInfo = () => {
+                    const bankId = parseInt(new URLSearchParams(window.location.search).get('bank'))
+                    const bank = allBanks.find(b => b.id === bankId)
+                    if (bank) {
+                        bankInfo.value = bank
+                        // 初始化题目列表
+                        bankInfo.value.questions = bank.questions
+                        currentQuestion.value = bankInfo.value.questions[0]
+                        
+                        // 更新考试设置
+                        examSettings.value = {
+                            duration: 60,
+                            questionCount: Math.min(20, bank.questions.length) // 默认选择20题或实际题目数量（取较小值）
+                        }
+                    } else {
+                        ElMessage.error('题库不存在')
+                        setTimeout(() => {
+                            window.location.href = 'question-bank.html'
+                        }, 1500)
+                    }
+                }
+
+                // 开始考试
+                const startExam = () => {
+                    // 随机打乱题目顺序
+                    bankInfo.value.questions = [...bankInfo.value.questions]
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, examSettings.value.questionCount)
+                    
+                    examStarted.value = true
+                    selectedAnswers.value = new Array(examSettings.value.questionCount)
+                    remainingTime.value = examSettings.value.duration * 60
+
+                    // 启动计时器
+                    timer = setInterval(() => {
+                        if (remainingTime.value > 0) {
+                            remainingTime.value--
+                        } else {
+                            submitExam()
+                        }
+                    }, 1000)
+
+                    // 添加页面关闭提示
+                    window.addEventListener('beforeunload', handleBeforeUnload)
+                }
+
+                // 选择答案
+                const selectAnswer = (answer) => {
+                    selectedAnswers.value[currentIndex.value] = answer
+                }
+
+                // 提交考试
+                const submitExam = () => {
+                    clearInterval(timer)
+                    window.removeEventListener('beforeunload', handleBeforeUnload)
+
+                    // 计算得分
+                    let correctCount = 0
+                    let wrongCount = 0
+                    let unansweredCount = 0
+
+                    selectedAnswers.value.forEach((answer, index) => {
+                        const question = bankInfo.value.questions[index]
+                        if (answer === undefined) {
+                            unansweredCount++
+                        } else if (answer === question.answer) {
+                            correctCount++
+                        } else {
+                            wrongCount++
+                        }
+                    })
+
+                    const score = Math.round((correctCount / examSettings.value.questionCount) * 100)
+
+                    examResult.value = {
+                        score,
+                        correctCount,
+                        wrongCount,
+                        unansweredCount,
+                        remainingTime: remainingTime.value
+                    }
+
+                    examFinished.value = true
+                }
+
+                // 跳转到指定题目
+                const goToQuestion = (index) => {
+                    if (index === currentIndex.value) return
+                    currentIndex.value = index
+                }
+
+                // 退出考试
+                const exitExam = () => {
+                    ElMessageBox.confirm(
+                        '确定要退出考试吗？退出后成绩将作废。',
+                        '警告',
+                        {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                            type: 'warning'
+                        }
+                    ).then(() => {
+                        clearInterval(timer)
+                        window.removeEventListener('beforeunload', handleBeforeUnload)
+                        window.location.href = `bank-detail.html?id=${bankInfo.value.id}`
+                    }).catch(() => {})
+                }
+
+                // 查看解析
+                const reviewExam = () => {
+                    // TODO: 实现查看解析功能
+                    ElMessage.info('查看解析功能开发中...')
+                }
+
+                // 页面关闭提示
+                const handleBeforeUnload = (e) => {
+                    e.preventDefault()
+                    e.returnValue = ''
+                }
+
+                // 页面跳转
+                const goToHome = () => {
+                    window.location.href = 'index.html'
+                }
+
+                const goToQuestionBank = () => {
+                    window.location.href = 'question-bank.html'
+                }
+
+                // 返回题库
+                const goBack = () => {
+                    window.location.href = `bank-detail.html?id=${bankInfo.value.id}`
+                }
+
+                // 页面加载时获取题库信息
+                onMounted(() => {
+                    getBankInfo()
+                })
+
+                // 组件卸载时清理
+                onUnmounted(() => {
+                    if (timer) {
+                        clearInterval(timer)
+                    }
+                    window.removeEventListener('beforeunload', handleBeforeUnload)
+                })
+
+                return {
+                    bankInfo,
+                    examSettings,
+                    examStarted,
+                    examFinished,
+                    currentIndex,
+                    selectedAnswers,
+                    remainingTime,
+                    examResult,
+                    currentQuestion,
+                    isAllAnswered,
+                    formatTime,
+                    showSettings,
+                    startExam,
+                    selectAnswer,
+                    submitExam,
+                    goToQuestion,
+                    exitExam,
+                    reviewExam,
+                    goToHome,
+                    goToQuestionBank,
+                    goBack
+                }
+            }
+        })
+
+        // 注册所有图标
+        for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+            app.component(key, component)
+        }
+
+        // 使用 Element Plus
+        app.use(ElementPlus)
+
+        // 挂载应用
+        app.mount('#app')
+    </script>
+</body>
+</html> 
