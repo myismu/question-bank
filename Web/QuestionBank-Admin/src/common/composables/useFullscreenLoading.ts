@@ -1,4 +1,5 @@
-import type { LoadingOptions } from "element-plus"
+// 显式导入 ElLoading：该文件未被任何模块引用，不会被打包扫描，无法依赖自动导入
+import { ElLoading, type LoadingOptions } from "element-plus"
 
 interface UseFullscreenLoading {
   <T extends (...args: Parameters<T>) => ReturnType<T>>(

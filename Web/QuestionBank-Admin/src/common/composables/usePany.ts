@@ -1,3 +1,6 @@
+// 显式导入 ElNotification：该文件未被任何模块引用，不会被打包扫描，无法依赖自动导入
+import { ElNotification } from "element-plus"
+
 function initStarNotification() {
   setTimeout(() => {
     ElNotification({
