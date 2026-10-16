@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.exambaby.qbank.service.code.mapper.ActivityRecordsMapper">
+    <resultMap id="AnswerDTOMap" type="com.exambaby.qbank.service.code.dto.AnswerDTO" autoMapping="true">
+        <id property="id" column="id"/>
+        <result column="user_answer" property="userAnswer"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="answer" property="answer"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="type" property="type"/>
+        <result column="is_correct" property="isCorrect"/>
+    </resultMap>
+
+    <select id="selectUserAnswerAndQuestionInfoByRecordId" resultMap="AnswerDTOMap">
+        SELECT a.id,
+               a.user_answer,
+               a.is_correct,
+               b.answer,
+               b.type
+        FROM activity_answers a
+                 INNER JOIN questions b ON a.question_id = b.id
+        WHERE a.record_id = #{recordId}
+    </select>
+
+    <update id="batchUpdateIAnswer">
+        UPDATE activity_answers
+        SET is_correct = CASE id
+        <foreach collection="list" item="item">
+            WHEN #{item.id} THEN #{item.isCorrect}
+        </foreach>
+        END
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" separator="," close=")">
+            #{item.id}
+        </foreach>
+    </update>
+
+    <update id="batchUpdateTypeByIds">
+        UPDATE activity_answers
+        SET is_correct = #{isCorrect}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO question (
+        id, bank_id, type, title, options, answer,
+        analysis, difficulty, sort_order, created_at, updated_at
+        )
+        VALUES
+        <foreach collection="list" item="q" separator=",">
+            (
+            #{q.id},
+            #{q.bankId},
+            #{q.type},
+            #{q.title},
+            #{q.options, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler},
+            #{q.answer, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler},
+            #{q.analysis},
+            #{q.difficulty},
+            #{q.sortOrder},
+            #{q.createdAt},
+            #{q.updatedAt}
+            )
+        </foreach>
+    </insert>
+</mapper>

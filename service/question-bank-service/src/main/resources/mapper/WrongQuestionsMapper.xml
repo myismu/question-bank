@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.exambaby.qbank.service.code.mapper.WrongQuestionsMapper">
+    <update id="batchUpdateErrorCount">
+        UPDATE wrong_questions
+        SET error_count = error_count + 1
+        WHERE
+        <foreach collection="list" item="item" separator=" OR ">
+            (user_id = #{item.userId} AND question_id = #{item.questionId})
+        </foreach>
+    </update>
+
+    <select id="getStatsByUserId" resultType="com.exambaby.qbank.service.code.dto.WrongQuestionStatsVO">
+        SELECT COUNT(*)                                                       AS total,
+               SUM(CASE WHEN DATE (created_at) = CURDATE() THEN 1 ELSE 0 END) AS today,
+               SUM(CASE WHEN status = 'reviewed' THEN 1 ELSE 0 END)           AS reviewed,
+               SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END)            AS unreviewed
+        FROM wrong_questions
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 嵌套映射 WrongQuestions + questions -->
+    <resultMap id="WrongQuestionsWithDetail" type="com.exambaby.qbank.service.code.entity.WrongQuestions">
+        <!-- wrong_questions 表字段 -->
+        <id property="id" column="w_id"/>
+        <result property="userId" column="w_user_id"/>
+        <result property="bankId" column="w_bank_id"/>
+        <result property="questionId" column="w_question_id"/>
+        <result property="activityAnswerId" column="w_activity_answer_id"/>
+        <result property="status" column="w_status"/>
+        <result property="errorCount" column="w_error_count"/>
+        <result property="lastErrorTime" column="w_last_error_time"/>
+        <result property="createdAt" column="w_created_at"/>
+        <result property="updatedAt" column="w_updated_at"/>
+
+        <!-- 嵌套 questions 字段 -->
+        <association property="questions" javaType="com.exambaby.qbank.service.code.entity.Questions">
+            <id property="id" column="q_id"/>
+            <result property="bankId" column="q_bank_id"/>
+            <result property="chapterId" column="q_chapter_id"/>
+            <result property="type" column="q_type"/>
+            <result property="title" column="q_title"/>
+            <result property="options" column="q_options"
+                    typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+            <result property="answer" column="q_answer"
+                    typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+            <result property="analysis" column="q_analysis"/>
+            <result property="difficulty" column="q_difficulty"/>
+            <result property="sortOrder" column="q_sort_order"/>
+            <result property="createdAt" column="q_created_at"/>
+            <result property="updatedAt" column="q_updated_at"/>
+        </association>
+    </resultMap>
+
+    <!-- 联表查询 + 条件可选 -->
+    <select id="selectWrongQuestionsWithQuestions" resultMap="WrongQuestionsWithDetail">
+        SELECT
+        w.id AS w_id,
+        w.user_id AS w_user_id,
+        w.bank_id AS w_bank_id,
+        w.question_id AS w_question_id,
+        w.activity_answer_id AS w_activity_answer_id,
+        w.status AS w_status,
+        w.error_count AS w_error_count,
+        w.last_error_time AS w_last_error_time,
+        w.created_at AS w_created_at,
+        w.updated_at AS w_updated_at,
+
+        q.id AS q_id,
+        q.bank_id AS q_bank_id,
+        q.chapter_id AS q_chapter_id,
+        q.type AS q_type,
+        q.title AS q_title,
+        q.options AS q_options,
+        q.answer AS q_answer,
+        q.analysis AS q_analysis,
+        q.difficulty AS q_difficulty,
+        q.sort_order AS q_sort_order,
+        q.created_at AS q_created_at,
+        q.updated_at AS q_updated_at
+        FROM wrong_questions w
+        JOIN questions q ON w.question_id = q.id
+        <where>
+            w.user_id = #{userId}  <!-- 必填条件 -->
+
+            AND w.status != 'ignored' <!-- 固定排除条件 -->
+
+            <if test="bankId != null">
+                AND w.bank_id = #{bankId}
+            </if>
+            <if test="status != null and status != ''">
+                AND w.status = #{status}
+            </if>
+            <if test="type != null and type != ''">
+                AND q.type = #{type}
+            </if>
+        </where>
+
+    </select>
+
+    <select id="getDistinctBanksByUserId" resultType="com.exambaby.qbank.service.code.dto.BankSimpleInfoDTO">
+        SELECT DISTINCT a.bank_id AS bankId, b.name AS bankName
+        FROM wrong_questions a
+                 INNER JOIN question_banks b ON
+            a.bank_id = b.id
+        WHERE a.user_id = #{userId}
+    </select>
+
+
+</mapper>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.exambaby</groupId>
+        <artifactId>service</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>question-bank-service</artifactId>
+
+    <dependencies>
+        <!-- ==================== 内部模块依赖 ==================== -->
+
+        <!-- API 模块：包含 Feign 客户端接口定义 -->
+        <!-- 用于服务间调用的接口声明 -->
+        <dependency>
+            <groupId>com.exambaby</groupId>
+            <artifactId>api</artifactId>
+        </dependency>
+
+        <!-- ==================== Redis 相关 ==================== -->
+
+        <!-- Spring Data Redis：Redis 基础操作支持 -->
+        <!-- 提供 RedisTemplate、缓存注解等功能 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
+        <!-- Redisson：Redis 高级客户端 -->
+        <!-- 提供分布式锁、分布式集合、BloomFilter 等高级功能 -->
+        <!-- 版本 3.44.0 支持 Spring Boot 3.x -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>3.44.0</version>
+        </dependency>
+
+        <!-- ==================== 服务调用与负载均衡 ==================== -->
+
+        <!-- OpenFeign：声明式 HTTP 客户端 -->
+        <!-- 通过接口注解方式调用其他微服务，简化服务间通信 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
+        <!-- Spring Cloud LoadBalancer：客户端负载均衡 -->
+        <!-- 替代已废弃的 Ribbon，支持多种负载均衡策略 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
+        <!-- ==================== 异步日志 ==================== -->
+
+        <!-- Disruptor：高性能内存队列 -->
+        <!-- 用于 Log4j2 异步日志，大幅提升日志写入性能 -->
+        <!-- 通过 AsyncLogger 实现每秒百万级日志吞吐 -->
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+    </dependencies>
+    <repositories>
+        <repository>
+            <id>seata-fix</id>
+            <name>Seata Official Repo</name>
+            <url>https://repo1.maven.org/maven2/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+        </repository>
+    </repositories>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>com.exambaby.qbank.service.QuestionBankApplication</mainClass>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

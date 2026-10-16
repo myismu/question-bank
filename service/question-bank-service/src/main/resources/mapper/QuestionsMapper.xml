@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.exambaby.qbank.service.code.mapper.QuestionsMapper" >
+
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO questions (
+        id, bank_id, type, title, options, answer,
+        analysis, difficulty, sort_order, created_at, updated_at
+        )
+        VALUES
+        <foreach collection="list" item="q" separator=",">
+            (
+            #{q.id},
+            #{q.bankId},
+            #{q.type},
+            #{q.title},
+            #{q.options, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler},
+            #{q.answer, typeHandler=com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler},
+            #{q.analysis},
+            #{q.difficulty},
+            #{q.sortOrder},
+            #{q.createdAt},
+            #{q.updatedAt}
+            )
+        </foreach>
+    </insert>
+
+    <select id="countByBankIds" resultType="map">
+        SELECT bank_id, COUNT(*) AS count
+        FROM questions
+        WHERE bank_id IN
+        <foreach collection="bankIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        GROUP BY bank_id
+    </select>
+</mapper>
