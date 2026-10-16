@@ -7,19 +7,18 @@ on:
 
 permissions:
   contents: read
-  packages: read   # 拉取平台制品（GitHub Maven 注册表需要认证）
-  packages: read   # 拉取平台制品（GitHub Maven 注册表需要认证）       # 最小权限：CI 只需要读代码
+  packages: read       # 拉取平台制品（GitHub 的 Maven 注册表要求认证）
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true   # 连推两次时，自动取消上一次没跑完的
+  cancel-in-progress: true
 
 jobs:
   # ============ 后端：编译 + 测试 ============
   backend:
     name: 后端构建与测试
     runs-on: ubuntu-latest
-    # 拉取平台制品（common/api/父 pom）：GitHub 的 Maven 注册表始终要求认证
+    # 拉取平台制品（common / api / 父 pom）：GitHub 的 Maven 注册表始终要求认证
     env:
       GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
@@ -30,10 +29,10 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: maven          # 缓存 ~/.m2，第二次起构建快很多
+          cache: maven
 
       - name: 编译并打包（含单元测试）
-        run: mvn -B clean package
+        run: mvn -B -s .mvn/ci-settings.xml clean package
 
   # ============ 前端：两个工程分别构建 ============
   frontend:
