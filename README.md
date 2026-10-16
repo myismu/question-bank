@@ -1,5 +1,7 @@
 # Question Bank 在线题库系统
 
+[![CI](https://github.com/myismu/question-bank/actions/workflows/ci.yml/badge.svg)](https://github.com/myismu/question-bank/actions/workflows/ci.yml)
+
 基于 Spring Cloud 微服务 + Vue 3 的在线题库平台，包含题库管理、在线练习、错题本与学习统计能力，分为学生端与管理端两个前端。
 
 ## 架构说明（重要）

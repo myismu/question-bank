@@ -1,0 +1,56 @@
+version: '3.8'
+
+# ============================================================
+# QuestionBank 业务系统编排：只包含业务自身的服务与前端
+#
+# 前置条件：平台（Nacos / MySQL / Redis / 统一网关 / 用户中心 /
+# 文件服务）已由 cloud-platform 仓库的 docker-compose 启动，
+# 本编排通过外部网络接入平台。
+#
+# 前端访问端口与本地开发端口保持一致，便于记忆：
+#   学生端 3334 / 管理端 3335
+# ============================================================
+
+services:
+  # ==================== 学生端 ====================
+  qb-web:
+    build:
+      context: ./Web/QuestionBank-Web
+      dockerfile: Dockerfile
+    container_name: qb-web
+    ports:
+      - "3334:80"
+    networks:
+      - platform-network
+
+  # ==================== 管理端 ====================
+  qb-admin:
+    build:
+      context: ./Web/QuestionBank-Admin
+      dockerfile: Dockerfile
+    container_name: qb-admin
+    ports:
+      - "3335:80"
+    networks:
+      - platform-network
+
+  # ==================== 题库服务 ====================
+  question-bank-service:
+    build:
+      context: ./service/question-bank-service
+      dockerfile: Dockerfile
+    container_name: question-bank-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - NACOS_ADDR=nacos:8848
+      - MYSQL_HOST=mysql
+      - REDIS_HOST=redis
+    networks:
+      - platform-network
+
+networks:
+  # 平台编排创建的网络（compose 默认以项目名做前缀，即目录名 cloud-platform）
+  # 若名称不一致，用 docker network ls 查到实际名称后修改此处
+  platform-network:
+    external: true
+    name: cloud-platform_platform-network
