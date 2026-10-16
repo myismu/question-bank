@@ -6,7 +6,9 @@ on:
   workflow_dispatch:   # 支持网页上手动点按钮重跑
 
 permissions:
-  contents: read       # 最小权限：CI 只需要读代码
+  contents: read
+  packages: read   # 拉取平台制品（GitHub Maven 注册表需要认证）
+  packages: read   # 拉取平台制品（GitHub Maven 注册表需要认证）       # 最小权限：CI 只需要读代码
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -17,6 +19,9 @@ jobs:
   backend:
     name: 后端构建与测试
     runs-on: ubuntu-latest
+    # 拉取平台制品（common/api/父 pom）：GitHub 的 Maven 注册表始终要求认证
+    env:
+      GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
