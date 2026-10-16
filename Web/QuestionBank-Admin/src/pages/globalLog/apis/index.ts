@@ -3,7 +3,7 @@ import type { GlobalLogDTO, GlobalLogPageParams } from "./type"
 
 // 全局日志-分页查询
 export function getGlobalLogPage(params: GlobalLogPageParams) {
-  return request<{ records: GlobalLogDTO[]; total: number }>({
+  return request<{ data: { records: GlobalLogDTO[]; total: number } }>({
     url: "/api/admin/global-log/page",
     method: "get",
     params
@@ -20,7 +20,7 @@ export function getAllGlobalLogs() {
 
 // 全局日志-获取详情
 export function getGlobalLogById(id: string | number) {
-  return request<GlobalLogDTO>({
+  return request<{ data: GlobalLogDTO }>({
     url: `/api/admin/global-log/${id}`,
     method: "get"
   })

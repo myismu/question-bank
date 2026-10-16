@@ -104,9 +104,12 @@ function handleDelete(row: GlobalLogDTO) {
 
 // 保存（新增/编辑）
 function handleSave() {
-  const api = isEdit.value ? updateGlobalLog : createGlobalLog
   const id = editData.value.id
-  api(id, editData.value).then(() => {
+  // 编辑走 update(id, data)，新增走 create(data)，两条路径参数不同不能合并调用
+  const saveRequest = isEdit.value && id != null
+    ? updateGlobalLog(id, editData.value)
+    : createGlobalLog(editData.value)
+  saveRequest.then(() => {
     ElMessage.success(isEdit.value ? "修改成功" : "新增成功")
     editDialogVisible.value = false
     fetchTableData()
