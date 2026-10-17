@@ -93,6 +93,9 @@ function createInstance() {
         case 408:
           error.message = message || "请求时间太长了，请稍后再试"
           break
+        case 413:
+          error.message = message || "上传的文件过大，请选择较小的文件"
+          break
         case 500:
           error.message = message || "服务器开小差了，请稍后再试"
           break
