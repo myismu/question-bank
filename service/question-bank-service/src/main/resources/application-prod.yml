@@ -92,7 +92,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${DB_HOST:192.168.1.100}:3306/question_bank?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:bcwenm77}
+    password: ${DB_PASSWORD:}
 
   # ==================== Redis 配置 ====================
   data:
@@ -130,7 +130,7 @@ file:
 
 # ==================== JWT 配置 ====================
 jwt:
-  secret: ${JWT_SECRET:DADAWDAFA165416556651WGFAGSDFCXCADFMVSAAFASFA}
+  secret: ${JWT_SECRET:}
   expiration: 86400000
 
 # ==================== 日志配置 ====================
