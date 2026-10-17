@@ -126,6 +126,8 @@ async function handleAvatarUpload(file: File) {
   } catch (error) {
     ElMessage.error("头像上传失败")
   }
+  // 自定义上传已完成，返回 false 阻止 el-upload 再发起默认 action 请求
+  return false
 }
 
 async function modifyPersonalInfo() {
