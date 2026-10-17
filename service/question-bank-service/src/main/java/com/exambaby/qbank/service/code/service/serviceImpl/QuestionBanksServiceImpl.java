@@ -398,5 +398,7 @@ public class QuestionBanksServiceImpl extends ServiceImpl<QuestionBanksMapper, Q
         if (questionBanksMapper.updateById(questionBank) == 0) {
             throw new BusinessException("题库更新失败", 444);
         }
+        // 更新后清除公开题库列表缓存，避免首页继续读到旧封面
+        evictAllPublicQuestionBanksCache();
     }
 }
