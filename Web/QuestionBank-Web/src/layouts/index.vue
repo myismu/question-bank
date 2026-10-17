@@ -6,6 +6,7 @@ import { ref, onMounted, computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { modifyPersonalInfo as apiModifyPersonalInfo, deleteImageApi, getPersonalInfoApi, OutLogin, uploadImageApi } from "@/common/apis/users"
 import { useUserStore } from "@/pinia/stores/user"
+import { getUserInfoCache, setUserInfoCache } from "@@/utils/cache/cookies"
 
 const router = useRouter()
 const route = useRoute()
@@ -61,6 +62,14 @@ function getUserAvatar() {
   return avatar ? imageBaseUrl + avatar : defaultAvatar
 }
 
+// 同步头像到 Cookie 缓存，避免刷新后被旧缓存覆盖
+function syncAvatarCache(avatar: string) {
+  const cached = getUserInfoCache()
+  if (cached) {
+    setUserInfoCache({ ...cached, avatar })
+  }
+}
+
 // 获取个人信息
 async function fetchPersonalInfo() {
   userInfoLoading.value = true
@@ -68,6 +77,7 @@ async function fetchPersonalInfo() {
     const { data } = await getPersonalInfoApi()
     userInfo.value = { ...data }
     Object.assign(editUserInfo.value, userInfo.value)
+    syncAvatarCache(userInfo.value.avatar)
   } catch (error) {
     ElMessage.error("获取个人信息失败")
   } finally {
@@ -123,6 +133,7 @@ async function handleAvatarUpload(file: File) {
       await modifyPersonalInfo()
     }
     userStore.avatar = imageUrl
+    syncAvatarCache(imageUrl)
   } catch (error) {
     ElMessage.error("头像上传失败")
   }
