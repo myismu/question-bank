@@ -1,14 +1,38 @@
 import type { AxiosInstance, AxiosRequestConfig } from "axios"
+import { useUserStore } from "@/pinia/stores/user"
+import { router } from "@/router"
 import { getToken } from "@@/utils/cache/cookies"
 import axios from "axios"
-import { get, merge } from "lodash-es"
-import { useUserStore } from "@/pinia/stores/user"
 import { ElMessage } from "element-plus"
+import { get, merge } from "lodash-es"
 
-/** 退出登录并强制刷新页面（会重定向到登录页） */
-function logout() {
-  useUserStore().logout()
-  location.reload()
+/** 防重入标记：避免并发多个请求同时返回 401 时重复弹窗和跳转 */
+let isHandlingUnauthorized = false
+
+/**
+ * 统一处理 401 未授权响应
+ * - 原本有 Token（登录过期）：清理登录态并平滑跳转登录页，绝不盲目 location.reload() 导致白名单页死循环
+ * - 原本无 Token（未登录游客）：仅给出提示，不刷新页面
+ */
+function handleUnauthorized(message?: string) {
+  if (isHandlingUnauthorized) return
+  isHandlingUnauthorized = true
+
+  const hadToken = Boolean(getToken())
+  if (hadToken) {
+    useUserStore().logout()
+    ElMessage.warning(message || "登录已过期，请重新登录")
+    if (router.currentRoute.value.path !== "/user/login") {
+      router.push({ path: "/user/login", query: { type: "login" } })
+    }
+  } else {
+    ElMessage.warning(message || "请先登录后再操作")
+  }
+
+  // 短暂冷却后释放锁，允许后续新的交互正常触发提示
+  setTimeout(() => {
+    isHandlingUnauthorized = false
+  }, 1500)
 }
 
 /** 创建请求实例 */
@@ -43,12 +67,9 @@ function createInstance() {
           // 本系统采用 code === 200 来表示没有业务错误
           return apiData
         case 401:
-          // Token 过期时
-          ElMessage({
-            message: apiData.message || "登录过期，请重新登录",
-            type: "warning"
-          })
-          return logout()
+          // Token 过期或未登录时统一处理，避免死循环刷新
+          handleUnauthorized(apiData.message)
+          return Promise.reject(new Error(apiData.message || "未授权"))
         case 444:
           ElMessage({
             message: apiData.message || "Error",
@@ -81,9 +102,8 @@ function createInstance() {
           error.message = "提交的信息有误，请检查后重试"
           break
         case 401:
-          error.message = message || "登录已过期，请重新登录"
-          logout()
-          break
+          handleUnauthorized(message)
+          return Promise.reject(error)
         case 403:
           error.message = message || "请先登录后再操作"
           break

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ArrowUp, Back, Collection, Clock, Document } from "@element-plus/icons-vue"
+import type { BankProgressDTO, StudyStatisticsDTO, StudyTrendDTO } from "../apis/types"
+import { ArrowLeft, ArrowRight, Clock } from "@element-plus/icons-vue"
 import * as echarts from "echarts"
-import { nextTick, onMounted, ref } from "vue"
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue"
 import { useRouter } from "vue-router"
-import { getStudyStatistics, getStudyTrend, getBankProgress } from "../apis/statistics"
-import type { StudyStatisticsDTO, StudyTrendDTO, BankProgressDTO } from "../apis/types"
+import { getBankProgress, getStudyStatistics, getStudyTrend } from "../apis/statistics"
 
 const router = useRouter()
 
-// 响应式数据
+// 学习统计核心数据
 const studyStatistics = ref<StudyStatisticsDTO>({
   totalPracticeCount: 0,
   totalExamCount: 0,
@@ -19,10 +19,16 @@ const studyStatistics = ref<StudyStatisticsDTO>({
 
 const studyTrend = ref<StudyTrendDTO[]>([])
 const bankProgress = ref<BankProgressDTO[]>([])
-const loading = ref(false)
+const loading = ref(true)
 const trendChart = ref<HTMLDivElement | null>(null)
+let chartInstance: echarts.ECharts | null = null
 
-// 加载统计数据
+// 窗口缩放时自适应重绘图表
+function handleResize() {
+  chartInstance?.resize()
+}
+
+// 加载全部统计数据
 async function loadStatistics() {
   loading.value = true
   try {
@@ -33,10 +39,9 @@ async function loadStatistics() {
     ])
 
     studyStatistics.value = statisticsData
-    studyTrend.value = trendData
-    bankProgress.value = progressData
+    studyTrend.value = trendData || []
+    bankProgress.value = progressData || []
 
-    // 初始化图表
     initTrendChart()
   } catch (error) {
     console.error("加载统计数据失败:", error)
@@ -45,35 +50,90 @@ async function loadStatistics() {
   }
 }
 
-// 初始化趋势图表
+// 初始化近 7 天学习趋势双轴图（柱状做题量 + 折线正确率）
 function initTrendChart() {
   nextTick(() => {
-    if (trendChart.value && studyTrend.value.length > 0) {
-      const myChart = echarts.init(trendChart.value)
-
-      // 提取图表数据
-      const dates = studyTrend.value.map(item => item.date.substring(5)) // 只显示月-日
-      const questionCounts = studyTrend.value.map(item => item.questionCount)
-      const accuracyRates = studyTrend.value.map(item =>
-        item.questionCount > 0 ? Math.round((item.correctCount / item.questionCount) * 100) : 0
-      )
-
-      const option = {
-        grid: { top: 40, right: 40, bottom: 40, left: 50 },
-        tooltip: { trigger: "axis", padding: [12, 16], borderRadius: 8, borderWidth: 0, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' },
-        legend: { data: ["做题数量", "正确率"], top: 0, itemGap: 24, itemWidth: 16 },
-        xAxis: { type: "category", data: dates, axisLine: { lineStyle: { color: '#e5e7eb' } }, axisLabel: { color: '#6b7280' }, axisTick: { show: false } },
-        yAxis: [
-          { type: "value", name: "题目数量", position: "left", splitLine: { lineStyle: { color: '#f3f4f6', type: 'dashed' } }, nameTextStyle: { color: '#6b7280' }, axisLabel: { color: '#6b7280' } },
-          { type: "value", name: "正确率", position: "right", axisLabel: { formatter: "{value}%", color: '#6b7280' }, splitLine: { show: false }, nameTextStyle: { color: '#6b7280' }, min: 0, max: 100 }
-        ],
-        series: [
-          { name: "做题数量", type: "bar", barWidth: '30%', itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#3b82f6' }, { offset: 1, color: '#60a5fa' }]), borderRadius: [4, 4, 0, 0] }, data: questionCounts },
-          { name: "正确率", type: "line", yAxisIndex: 1, smooth: true, symbolSize: 8, itemStyle: { color: '#10b981', shadowColor: 'rgba(16,185,129,0.3)', shadowBlur: 8 }, lineStyle: { width: 3 }, data: accuracyRates }
-        ]
-      }
-      myChart.setOption(option)
+    if (!trendChart.value || studyTrend.value.length === 0) return
+    if (chartInstance) {
+      chartInstance.dispose()
     }
+    chartInstance = echarts.init(trendChart.value)
+
+    const dates = studyTrend.value.map(item => item.date.substring(5))
+    const questionCounts = studyTrend.value.map(item => item.questionCount)
+    const accuracyRates = studyTrend.value.map(item =>
+      item.questionCount > 0 ? Math.round((item.correctCount / item.questionCount) * 100) : 0
+    )
+
+    const option: echarts.EChartsOption = {
+      grid: { top: 44, right: 44, bottom: 28, left: 48 },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "#ffffff",
+        borderColor: "#e2e8f0",
+        borderWidth: 1,
+        textStyle: { color: "#0f172a", fontSize: 13 },
+        padding: [10, 14]
+      },
+      legend: {
+        data: ["做题数量", "正确率"],
+        top: 0,
+        right: 0,
+        itemGap: 20,
+        itemWidth: 12,
+        itemHeight: 8,
+        textStyle: { color: "#475569", fontSize: 12 }
+      },
+      xAxis: {
+        type: "category",
+        data: dates,
+        axisLine: { lineStyle: { color: "#e2e8f0" } },
+        axisLabel: { color: "#64748b", fontSize: 12 },
+        axisTick: { show: false }
+      },
+      yAxis: [
+        {
+          type: "value",
+          name: "题数",
+          position: "left",
+          minInterval: 1,
+          nameTextStyle: { color: "#64748b", fontSize: 12 },
+          axisLabel: { color: "#64748b", fontSize: 12 },
+          splitLine: { lineStyle: { color: "#f1f5f9", type: "dashed" } }
+        },
+        {
+          type: "value",
+          name: "正确率",
+          position: "right",
+          min: 0,
+          max: 100,
+          nameTextStyle: { color: "#64748b", fontSize: 12 },
+          axisLabel: { formatter: "{value}%", color: "#64748b", fontSize: 12 },
+          splitLine: { show: false }
+        }
+      ],
+      series: [
+        {
+          name: "做题数量",
+          type: "bar",
+          barMaxWidth: 28,
+          itemStyle: { color: "#2563eb", borderRadius: [4, 4, 0, 0] },
+          data: questionCounts
+        },
+        {
+          name: "正确率",
+          type: "line",
+          yAxisIndex: 1,
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 7,
+          itemStyle: { color: "#059669" },
+          lineStyle: { width: 2.5, color: "#059669" },
+          data: accuracyRates
+        }
+      ]
+    }
+    chartInstance.setOption(option)
   })
 }
 
@@ -81,36 +141,37 @@ function goToHome() {
   router.push("/")
 }
 
-// 获取进度类型
-function getProgressType(percentage: number) {
-  if (percentage >= 80) return "success"
-  if (percentage >= 50) return "warning"
-  return "danger"
+function goToBankDetail(bankId: string) {
+  router.push({ name: "BankDetail", query: { id: bankId } })
 }
 
-// 获取进度状态文本
-function getProgressStatus(percentage: number) {
+// 进度状态样式类
+function getProgressClass(percentage: number): string {
+  if (percentage >= 80) return "status-good"
+  if (percentage >= 50) return "status-mid"
+  return "status-start"
+}
+
+function getProgressStatus(percentage: number): string {
   if (percentage >= 90) return "优秀"
   if (percentage >= 70) return "良好"
-  if (percentage >= 50) return "一般"
-  if (percentage >= 20) return "待提高"
+  if (percentage >= 50) return "进行中"
+  if (percentage >= 20) return "待巩固"
   return "刚开始"
 }
 
-// 格式化最后学习时间
-function formatLastStudyTime(lastStudyTime?: string) {
+function formatLastStudyTime(lastStudyTime?: string): string {
   if (!lastStudyTime) return "暂无记录"
-  
   try {
     const date = new Date(lastStudyTime)
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    
-    if (days === 0) return "今天"
+
+    if (days <= 0) return "今天"
     if (days === 1) return "昨天"
-    if (days < 7) return `${days}天前`
-    if (days < 30) return `${Math.floor(days / 7)}周前`
+    if (days < 7) return `${days} 天前`
+    if (days < 30) return `${Math.floor(days / 7)} 周前`
     return date.toLocaleDateString()
   } catch {
     return "暂无记录"
@@ -119,362 +180,457 @@ function formatLastStudyTime(lastStudyTime?: string) {
 
 onMounted(() => {
   loadStatistics()
+  window.addEventListener("resize", handleResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", handleResize)
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
 })
 </script>
 
 <template>
-  <el-main class="page-main">
-    <div class="page-container">
-      <div class="page-header">
-        <el-button @click="goToHome" icon="Back" size="large" circle type="primary" plain class="back-btn"></el-button>
-        <div class="header-titles">
-          <h2>数据统计</h2>
-          <p>多维图表，清晰掌握学习进度</p>
+  <div class="stats-page">
+    <!-- 顶部返回与页眉 -->
+    <header class="page-header">
+      <button type="button" class="back-btn" @click="goToHome">
+        <el-icon><ArrowLeft /></el-icon>
+        <span>返回首页</span>
+      </button>
+      <div class="header-text">
+        <h1 class="page-title">
+          学习数据统计
+        </h1>
+        <p class="page-subtitle">
+          从练习频次、正确率趋势与题库完成度三个维度复盘学习进展
+        </p>
+      </div>
+    </header>
+
+    <!-- 四项核心 KPI 指标卡 -->
+    <section class="kpi-grid" v-loading="loading">
+      <div class="kpi-card">
+        <span class="kpi-label">总练习次数</span>
+        <div class="kpi-value">
+          {{ studyStatistics.totalPracticeCount }}
+        </div>
+        <span class="kpi-foot">累计完成的专项练习</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">总考试次数</span>
+        <div class="kpi-value">
+          {{ studyStatistics.totalExamCount }}
+        </div>
+        <span class="kpi-foot">累计完成的模拟考试</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">累计答对题数</span>
+        <div class="kpi-value is-emerald">
+          {{ studyStatistics.correctCount }}
+        </div>
+        <span class="kpi-foot">答错 {{ studyStatistics.wrongCount }} 题</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">平均正确率</span>
+        <div class="kpi-value is-accent">
+          {{ studyStatistics.accuracyRate.toFixed(1) }}<span class="kpi-unit">%</span>
+        </div>
+        <span class="kpi-foot">综合答题准确表现</span>
+      </div>
+    </section>
+
+    <!-- 最近 7 天学习趋势图 -->
+    <section class="panel-card" v-loading="loading">
+      <div class="panel-head">
+        <div>
+          <h2 class="section-heading">
+            最近 7 天学习趋势
+          </h2>
+          <p class="section-desc">
+            每日做题数量与当日正确率变化对照
+          </p>
         </div>
       </div>
 
-      <!-- 核心指标卡片 -->
-      <el-row :gutter="24" class="stat-cards" v-loading="loading">
-        <el-col :xs="12" :sm="12" :md="6" class="mb-5">
-          <div class="stat-card">
-            <div class="icon-wrap bg-blue"><el-icon><Document /></el-icon></div>
-            <div class="stat-info">
-              <span class="stat-title">总练习次数</span>
-              <div class="stat-val">{{ studyStatistics.totalPracticeCount }}</div>
-              <div class="stat-trend trend-up">
-                <el-icon><ArrowUp /></el-icon> <span>累计练习</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="12" :sm="12" :md="6" class="mb-5">
-          <div class="stat-card">
-            <div class="icon-wrap bg-purple"><el-icon><Collection /></el-icon></div>
-            <div class="stat-info">
-              <span class="stat-title">总考试次数</span>
-              <div class="stat-val">{{ studyStatistics.totalExamCount }}</div>
-              <div class="stat-trend trend-up">
-                <el-icon><ArrowUp /></el-icon> <span>累计考试</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="12" :sm="12" :md="6" class="mb-5">
-          <div class="stat-card">
-            <div class="icon-wrap bg-green"><el-icon><Document /></el-icon></div>
-            <div class="stat-info">
-              <span class="stat-title">正确题目数</span>
-              <div class="stat-val">{{ studyStatistics.correctCount }}</div>
-              <div class="stat-trend trend-up">
-                <el-icon><ArrowUp /></el-icon> <span>正确作答</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-        <el-col :xs="12" :sm="12" :md="6" class="mb-5">
-          <div class="stat-card">
-            <div class="icon-wrap bg-orange"><el-icon><Clock /></el-icon></div>
-            <div class="stat-info">
-              <span class="stat-title">平均正确率</span>
-              <div class="stat-val">{{ studyStatistics.accuracyRate.toFixed(1) }}<span class="text-sm">%</span></div>
-              <div class="stat-trend trend-up">
-                <el-icon><ArrowUp /></el-icon> <span>学习表现</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
-      </el-row>
+      <div v-if="!loading && studyTrend.length === 0" class="panel-empty">
+        <el-empty description="近 7 天暂无学习趋势数据" :image-size="72" />
+      </div>
+      <div v-else ref="trendChart" class="trend-chart" />
+    </section>
 
-      <!-- 学习趋势图 -->
-      <div class="chart-section mb-8" v-loading="loading">
-        <div class="section-title-wrap">
-          <h3 class="section-title">最近7天学习趋势</h3>
-        </div>
-        <div class="chart-card">
-          <div ref="trendChart" style="height: 360px; width: 100%;" />
-        </div>
+    <!-- 我的题库学习进度 -->
+    <section class="progress-section" v-loading="loading">
+      <div class="section-bar">
+        <h2 class="section-heading">
+          我的题库进度
+        </h2>
+        <span class="section-count">共 {{ bankProgress.length }} 套</span>
       </div>
 
-      <!-- 题库学习情况 -->
-      <div class="bank-progress-section" v-loading="loading">
-        <div class="section-title-wrap">
-          <h3 class="section-title">我的题库进度</h3>
-        </div>
-        <el-row :gutter="24">
-          <el-col :xs="24" :sm="12" :md="12" :lg="8" v-for="bank in bankProgress" :key="bank.bankId" class="mb-6">
-            <div class="modern-bank-card">
-              <div class="bc-header">
-                <div class="bc-icon"><el-icon><Collection /></el-icon></div>
-                <div class="bc-title-wrap">
-                  <h4>{{ bank.bankName }}</h4>
-                  <div class="bc-stats">已学 {{ bank.completedCount }} / {{ bank.totalCount }} 题</div>
-                </div>
-                <div class="bc-percent">{{ bank.progressPercentage.toFixed(1) }}%</div>
-              </div>
-              <div class="bc-progress">
-                <el-progress :percentage="bank.progressPercentage" :color="bank.progressColor" :show-text="false" :stroke-width="8" />
-              </div>
-              <div class="bc-footer">
-                <el-tag :type="getProgressType(bank.progressPercentage)" round effect="light" size="small">
-                  {{ getProgressStatus(bank.progressPercentage) }}
-                </el-tag>
-                <div class="bc-time"><el-icon><Clock /></el-icon>{{ formatLastStudyTime(bank.lastStudyTime) }}</div>
-              </div>
+      <div v-if="bankProgress.length > 0" class="progress-grid">
+        <article
+          v-for="bank in bankProgress"
+          :key="bank.bankId"
+          class="progress-card"
+          @click="goToBankDetail(bank.bankId)"
+        >
+          <div class="pc-head">
+            <h3 class="pc-name" :title="bank.bankName">
+              {{ bank.bankName }}
+            </h3>
+            <span class="pc-percent">{{ bank.progressPercentage.toFixed(1) }}%</span>
+          </div>
+
+          <div class="pc-sub">
+            已学 {{ bank.completedCount }} / {{ bank.totalCount }} 题
+          </div>
+
+          <div class="pc-bar-track">
+            <div
+              class="pc-bar-fill"
+              :style="{ width: `${Math.min(100, Math.max(0, bank.progressPercentage || 0))}%` }"
+            />
+          </div>
+
+          <div class="pc-foot">
+            <span class="status-badge" :class="getProgressClass(bank.progressPercentage)">
+              {{ getProgressStatus(bank.progressPercentage) }}
+            </span>
+            <div class="pc-foot-right">
+              <span class="pc-time">
+                <el-icon><Clock /></el-icon>
+                <span>{{ formatLastStudyTime(bank.lastStudyTime) }}</span>
+              </span>
+              <el-icon class="pc-arrow">
+                <ArrowRight />
+              </el-icon>
             </div>
-          </el-col>
-        </el-row>
-        
-        <div v-if="bankProgress.length === 0" class="empty-state">
-          <div class="empty-icon"><el-icon><Document /></el-icon></div>
-          <p class="empty-title">暂无题库学习记录</p>
-          <p class="empty-desc">赶紧参加练习或者考试，记录你的进步吧！</p>
-        </div>
+          </div>
+        </article>
       </div>
-    </div>
-  </el-main>
+
+      <div v-else class="panel-card panel-empty">
+        <el-empty description="暂无题库学习记录，去挑一套题库开始练习吧" :image-size="76" />
+      </div>
+    </section>
+  </div>
 </template>
 
 <style scoped>
-/* 全局页面 */
-.page-main {
-  background-color: var(--el-bg-color-page, #f3f5f9);
-  min-height: 100vh;
-  padding: 24px;
-}
-.page-container {
-  max-width: 1280px;
-  margin: 0 auto;
-}
-
-/* 头部 */
-.page-header {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 32px;
-}
-.back-btn {
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
-}
-.header-titles h2 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--el-text-color-primary, #1d1e23);
-  margin: 0 0 4px 0;
-}
-.header-titles p {
-  font-size: 14px;
-  color: var(--el-text-color-secondary, #6b7280);
-  margin: 0;
-}
-
-/* 工具 */
-.mb-5 { margin-bottom: 20px; }
-.mb-6 { margin-bottom: 24px; }
-.mb-8 { margin-bottom: 32px; }
-.text-sm { font-size: 60%; margin-left: 2px; }
-
-/* 核心指标卡片 */
-.stat-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  border: 1px solid var(--el-border-color-light);
-}
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
-}
-.icon-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 28px;
-  flex-shrink: 0;
-}
-.bg-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-.bg-purple { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
-.bg-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-.bg-orange { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-
-.stat-info { flex: 1; }
-.stat-title {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--el-text-color-secondary);
-  margin-bottom: 6px;
-}
-.stat-val {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--el-text-color-primary);
-  line-height: 1.1;
-  margin-bottom: 8px;
-}
-.stat-trend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-.trend-up { color: #10b981; }
-.trend-up span { color: var(--el-text-color-regular); }
-
-/* 标题 */
-.section-title-wrap {
-  margin-bottom: 20px;
-}
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0;
-  padding-left: 14px;
-  position: relative;
-}
-.section-title::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 16px;
-  background: var(--el-color-primary);
-  border-radius: 2px;
-}
-
-/* 图表容器 */
-.chart-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-  border: 1px solid var(--el-border-color-light);
-}
-
-/* 进度卡片 */
-.modern-bank-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-  border: 1px solid var(--el-border-color-light);
-  transition: all 0.3s;
-  height: 100%;
+/* ======== 页面整体（融入 Layout 的 #f8fafc 背景） ======== */
+.stats-page {
   display: flex;
   flex-direction: column;
+  gap: 24px;
+  color: #0f172a;
 }
-.modern-bank-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-  border-color: var(--el-color-primary-light-5);
-}
-.bc-header {
+
+/* 顶部返回与页眉 */
+.page-header {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.back-btn {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.16s ease;
 }
-.bc-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  box-shadow: 0 4px 10px rgba(79, 172, 254, 0.3);
+
+.back-btn:hover {
+  border-color: #cbd5e1;
+  color: #0f172a;
+  background-color: #f8fafc;
 }
-.bc-title-wrap {
-  flex: 1;
-  overflow: hidden;
-}
-.bc-title-wrap h4 {
+
+.page-title {
   margin: 0 0 6px 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ======== 四列 KPI 指标卡（克制清晰，无花哨色块） ======== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kpi-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kpi-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.kpi-value {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-value.is-accent {
+  color: #2563eb;
+}
+
+.kpi-value.is-emerald {
+  color: #059669;
+}
+
+.kpi-unit {
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-left: 2px;
 }
-.bc-stats {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
+
+.kpi-foot {
+  font-size: 12px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
 }
-.bc-percent {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--el-color-primary);
+
+/* ======== 通用白卡面板与图表区 ======== */
+.panel-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px 28px;
 }
-.bc-progress {
-  margin-bottom: auto;
-  padding-bottom: 20px;
-}
-.bc-footer {
+
+.panel-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-top: 16px;
-  border-top: 1px dashed var(--el-border-color-light);
-}
-.bc-time {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
+  margin-bottom: 16px;
 }
 
-/* 空状态 */
-.empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  background: #fff;
-  border-radius: 20px;
-  border: 1px dashed var(--el-border-color-dark);
-}
-.empty-icon {
-  width: 80px;
-  height: 80px;
-  background: var(--el-fill-color-light);
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 36px;
-  color: var(--el-text-color-placeholder);
-  margin: 0 auto 20px;
-}
-.empty-title {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-.empty-desc {
+.section-heading {
   margin: 0;
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
-/* 响应式 */
-@media screen and (max-width: 768px) {
-  .page-main { padding: 16px; }
-  .header-titles h2 { font-size: 20px; }
-  .stat-val { font-size: 24px; }
+.section-desc {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.trend-chart {
+  width: 100%;
+  height: 340px;
+}
+
+.panel-empty {
+  padding: 24px 0;
+}
+
+/* ======== 题库进度区 ======== */
+.progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.section-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-count {
+  font-size: 13px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.progress-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.progress-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.06);
+  transform: translateY(-1px);
+}
+
+.pc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.pc-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pc-percent {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2563eb;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.pc-sub {
+  font-size: 12px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background-color: #f1f5f9;
+  overflow: hidden;
+}
+
+.pc-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background-color: #2563eb;
+  transition: width 0.3s ease;
+}
+
+.pc-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-good {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.status-mid {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-start {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.pc-foot-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+}
+
+.pc-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.pc-arrow {
+  font-size: 13px;
+  color: #94a3b8;
+  transition:
+    transform 0.16s ease,
+    color 0.16s ease;
+}
+
+.progress-card:hover .pc-arrow {
+  color: #2563eb;
+  transform: translateX(2px);
+}
+
+/* ======== 响应式适配 ======== */
+@media screen and (max-width: 1024px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .progress-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-card {
+    padding: 18px 16px;
+  }
 }
 </style>

@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import defaultAvatar from "@@/assets/images/layouts/user_logo.png"
-import { Camera, Message, Phone, User, Edit, Promotion, ArrowDown } from "@element-plus/icons-vue"
-import { ElMessage, ElNotification } from "element-plus"
-import { ref, onMounted, computed } from "vue"
-import { useRoute, useRouter } from "vue-router"
 import { modifyPersonalInfo as apiModifyPersonalInfo, deleteImageApi, getPersonalInfoApi, OutLogin, uploadImageApi } from "@/common/apis/users"
 import { useUserStore } from "@/pinia/stores/user"
+import defaultAvatar from "@@/assets/images/layouts/user_logo.png"
 import { getUserInfoCache, setUserInfoCache } from "@@/utils/cache/cookies"
+import { ArrowDown, Camera, Edit, Message, Phone, Promotion, User } from "@element-plus/icons-vue"
+import { ElMessage, ElNotification } from "element-plus"
+import { computed, onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 
 const router = useRouter()
 const route = useRoute()
@@ -57,7 +57,7 @@ onMounted(() => {
 function getUserAvatar() {
   const imageBaseUrl = import.meta.env.VITE_IMAGE_URL
   if (avatarError.value) return defaultAvatar
-  
+
   const avatar = isEditing.value ? editUserInfo.value.avatar : (userInfo.value.avatar || userStore.avatar)
   return avatar ? imageBaseUrl + avatar : defaultAvatar
 }
@@ -79,6 +79,8 @@ async function fetchPersonalInfo() {
     Object.assign(editUserInfo.value, userInfo.value)
     syncAvatarCache(userInfo.value.avatar)
   } catch (error) {
+    // 记录异常详情便于排查，同时向用户展示友好提示
+    console.error("获取个人信息失败:", error)
     ElMessage.error("获取个人信息失败")
   } finally {
     userInfoLoading.value = false
@@ -93,8 +95,8 @@ function showPersonalInfo() {
 
 function handleSelect(key: string) {
   const routes: Record<string, string> = {
-    "1": "/",
-    "2": "/question-bank"
+    1: "/",
+    2: "/question-bank"
   }
   if (routes[key]) router.push(routes[key])
 }
@@ -110,7 +112,7 @@ async function handleLogout() {
   }
 }
 
-const goToLogin = (type: 'login' | 'register') => {
+function goToLogin(type: "login" | "register") {
   router.push({ path: "/user/login", query: { type } })
 }
 
@@ -124,7 +126,7 @@ async function handleAvatarUpload(file: File) {
 
     const response = await uploadImageApi(file)
     const imageUrl = response.data
-    
+
     if (isEditing.value) {
       editUserInfo.value.avatar = imageUrl
     } else {
@@ -135,6 +137,8 @@ async function handleAvatarUpload(file: File) {
     userStore.avatar = imageUrl
     syncAvatarCache(imageUrl)
   } catch (error) {
+    // 记录上传异常详情便于排查
+    console.error("头像上传失败:", error)
     ElMessage.error("头像上传失败")
   }
   // 自定义上传已完成，返回 false 阻止 el-upload 再发起默认 action 请求
@@ -152,21 +156,23 @@ async function modifyPersonalInfo() {
     await fetchPersonalInfo()
     ElMessage.success("个人信息已更新")
   } catch (error) {
+    // 记录保存异常详情便于排查
+    console.error("修改个人信息失败:", error)
     ElMessage.error("修改失败，请稍后再试")
   }
 }
 
-const startEdit = () => {
+function startEdit() {
   isEditing.value = true
   Object.assign(editUserInfo.value, userInfo.value)
 }
 
-const cancelEdit = () => {
+function cancelEdit() {
   isEditing.value = false
 }
 
 const avatarUploadRef = ref()
-const triggerAvatarUpload = () => {
+function triggerAvatarUpload() {
   avatarUploadRef.value?.$el.querySelector("input[type=file]")?.click()
 }
 </script>
@@ -177,6 +183,7 @@ const triggerAvatarUpload = () => {
     <header class="main-header">
       <div class="header-content">
         <div class="logo-area" @click="router.push('/')">
+          <span class="logo-mark" aria-hidden="true" />
           <span class="logo-text">学习题库</span>
           <span class="logo-badge">Beta</span>
         </div>
@@ -189,8 +196,12 @@ const triggerAvatarUpload = () => {
             class="custom-menu"
             @select="handleSelect"
           >
-            <el-menu-item index="1">首页</el-menu-item>
-            <el-menu-item index="2">我的题库</el-menu-item>
+            <el-menu-item index="1">
+              首页
+            </el-menu-item>
+            <el-menu-item index="2">
+              我的题库
+            </el-menu-item>
           </el-menu>
         </nav>
 
@@ -215,8 +226,12 @@ const triggerAvatarUpload = () => {
             </el-dropdown>
           </template>
           <div v-else class="auth-buttons">
-            <el-button @click="goToLogin('login')" text>登录</el-button>
-            <el-button @click="goToLogin('register')" type="primary" round>注册</el-button>
+            <el-button class="login-btn" @click="goToLogin('login')" text>
+              登录
+            </el-button>
+            <el-button class="register-btn" @click="goToLogin('register')" type="primary">
+              注册
+            </el-button>
           </div>
         </div>
       </div>
@@ -238,7 +253,7 @@ const triggerAvatarUpload = () => {
       <div class="footer-inner">
         <div class="footer-links">
           <p>© 2026 大学生个性化学习题库 · 见证成长每一刻</p>
-          <div class="footer-divider"></div>
+          <div class="footer-divider" />
           <a href="https://beian.miit.gov.cn/" target="_blank">桂ICP备2024025252号</a>
         </div>
       </div>
@@ -253,7 +268,7 @@ const triggerAvatarUpload = () => {
       align-center
     >
       <div class="profile-card" v-loading="userInfoLoading">
-        <div class="profile-cover"></div>
+        <div class="profile-cover" />
         <div class="profile-header">
           <div class="avatar-edit-wrapper">
             <el-upload
@@ -265,23 +280,33 @@ const triggerAvatarUpload = () => {
             >
               <div class="avatar-container" @click.stop="triggerAvatarUpload">
                 <el-image :src="getUserAvatar()" class="avatar-img" fit="cover" />
-                <div class="avatar-mask"><el-icon><Camera /></el-icon></div>
+                <div class="avatar-mask">
+                  <el-icon><Camera /></el-icon>
+                </div>
               </div>
             </el-upload>
             <el-image v-else :src="getUserAvatar()" class="avatar-img" :preview-src-list="[getUserAvatar()]" fit="cover" />
           </div>
           <div class="header-actions">
-            <el-button v-if="!isEditing" @click="startEdit" plain round :icon="Edit">编辑</el-button>
+            <el-button v-if="!isEditing" @click="startEdit" plain round :icon="Edit">
+              编辑
+            </el-button>
             <template v-else>
-              <el-button @click="cancelEdit" text round>取消</el-button>
-              <el-button type="primary" @click="modifyPersonalInfo" round>保存</el-button>
+              <el-button @click="cancelEdit" text round>
+                取消
+              </el-button>
+              <el-button type="primary" @click="modifyPersonalInfo" round>
+                保存
+              </el-button>
             </template>
           </div>
         </div>
 
         <div class="profile-body">
           <div class="user-title">
-            <h2 v-if="!isEditing">{{ userInfo.username }}</h2>
+            <h2 v-if="!isEditing">
+              {{ userInfo.username }}
+            </h2>
             <el-input v-else v-model="editUserInfo.username" placeholder="设置新昵称" />
             <span class="user-id">UID: {{ userInfo.id }}</span>
           </div>
@@ -289,12 +314,16 @@ const triggerAvatarUpload = () => {
           <div class="info-list">
             <div class="info-item">
               <label><el-icon><Message /></el-icon> 电子邮箱</label>
-              <p v-if="!isEditing">{{ userInfo.email || '未绑定' }}</p>
+              <p v-if="!isEditing">
+                {{ userInfo.email || '未绑定' }}
+              </p>
               <el-input v-else v-model="editUserInfo.email" placeholder="请输入邮箱" />
             </div>
             <div class="info-item">
               <label><el-icon><Phone /></el-icon> 手机号码</label>
-              <p v-if="!isEditing">{{ userInfo.phoneNumber || '未绑定' }}</p>
+              <p v-if="!isEditing">
+                {{ userInfo.phoneNumber || '未绑定' }}
+              </p>
               <el-input v-else v-model="editUserInfo.phoneNumber" placeholder="请输入手机号" maxlength="11" />
             </div>
           </div>
@@ -362,24 +391,27 @@ const triggerAvatarUpload = () => {
 }
 
 @keyframes float {
-  0% { transform: translateY(0) scale(1); }
-  100% { transform: translateY(40px) scale(1.1); }
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    transform: translateY(40px) scale(1.1);
+  }
 }
 
-/* Header 样式 */
+/* Header 样式：现代效率工具风（清爽半透明白底 + 1px 细边框） */
 .main-header {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   height: 64px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e2e8f0;
   z-index: 1000;
   display: flex;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 
   .header-content {
     width: 100%;
@@ -396,29 +428,47 @@ const triggerAvatarUpload = () => {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  
+
+  .logo-mark {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #2563eb;
+    position: relative;
+    flex-shrink: 0;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 2px solid #ffffff;
+      border-radius: 2px;
+    }
+  }
+
   .logo-text {
-    font-size: 20px;
-    font-weight: 800;
-    background: linear-gradient(135deg, #409eff, #36cfc9);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #0f172a;
   }
 
   .logo-badge {
-    font-size: 10px;
-    background: #ecf5ff;
-    color: #409eff;
-    padding: 2px 6px;
+    font-size: 11px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    padding: 1px 6px;
     border-radius: 4px;
-    font-weight: bold;
+    font-weight: 600;
+    line-height: 1.4;
   }
 }
 
 .nav-area {
   flex: 1;
-  margin: 0 40px;
-  
+  margin: 0 36px;
+
   .custom-menu {
     border-bottom: none;
     background: transparent;
@@ -427,14 +477,52 @@ const triggerAvatarUpload = () => {
     :deep(.el-menu-item) {
       height: 64px;
       line-height: 64px;
-      font-size: 15px;
-      color: #606266;
-      border-bottom-width: 3px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #475569;
+      border-bottom-width: 2px;
 
-      &:hover, &.is-active {
-        color: #409eff !important;
+      &:hover {
+        color: #0f172a !important;
         background: transparent !important;
       }
+
+      &.is-active {
+        color: #2563eb !important;
+        border-bottom-color: #2563eb !important;
+        font-weight: 600;
+        background: transparent !important;
+      }
+    }
+  }
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .login-btn {
+    color: #475569;
+    font-weight: 500;
+    border-radius: 8px;
+
+    &:hover {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+  }
+
+  .register-btn {
+    background: #2563eb;
+    border-color: #2563eb;
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 8px 18px;
+
+    &:hover {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
     }
   }
 }
@@ -508,7 +596,9 @@ const triggerAvatarUpload = () => {
     color: #606266;
     text-decoration: none;
     transition: color 0.3s;
-    &:hover { color: #409eff; }
+    &:hover {
+      color: #409eff;
+    }
   }
 }
 
@@ -516,8 +606,12 @@ const triggerAvatarUpload = () => {
 :deep(.modern-profile-dialog) {
   border-radius: 16px;
   overflow: hidden;
-  .el-dialog__header { display: none; }
-  .el-dialog__body { padding: 0; }
+  .el-dialog__header {
+    display: none;
+  }
+  .el-dialog__body {
+    padding: 0;
+  }
 }
 
 .profile-card {
@@ -538,8 +632,8 @@ const triggerAvatarUpload = () => {
     background: #fff;
     padding: 4px;
     border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
     .avatar-img {
       width: 80px;
       height: 80px;
@@ -552,7 +646,7 @@ const triggerAvatarUpload = () => {
       .avatar-mask {
         position: absolute;
         inset: 0;
-        background: rgba(0,0,0,0.4);
+        background: rgba(0, 0, 0, 0.4);
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -561,17 +655,26 @@ const triggerAvatarUpload = () => {
         opacity: 0;
         transition: 0.3s;
       }
-      &:hover .avatar-mask { opacity: 1; }
+      &:hover .avatar-mask {
+        opacity: 1;
+      }
     }
   }
 
   .profile-body {
     padding: 24px;
-    
+
     .user-title {
       margin-bottom: 24px;
-      h2 { margin: 0; font-size: 22px; color: #1f2f3d; }
-      .user-id { font-size: 12px; color: #909399; }
+      h2 {
+        margin: 0;
+        font-size: 22px;
+        color: #1f2f3d;
+      }
+      .user-id {
+        font-size: 12px;
+        color: #909399;
+      }
     }
 
     .info-list {
@@ -605,19 +708,25 @@ const triggerAvatarUpload = () => {
   .header-content {
     padding: 0 16px !important;
   }
-  
+
   .nav-area {
     margin: 0 10px !important;
-    .el-menu-item { padding: 0 12px !important; }
+    .el-menu-item {
+      padding: 0 12px !important;
+    }
   }
 
-  .logo-text { display: none; }
-  
+  .logo-text {
+    display: none;
+  }
+
   .main-body .content-wrapper {
     padding: 12px;
   }
 
-  .username-text { display: none; }
+  .username-text {
+    display: none;
+  }
 }
 
 /* 动画 */

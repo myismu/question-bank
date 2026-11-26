@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import type { ActivityAnswerDTO, ActivityRecordDTO } from "../apis/type"
-import { Document, Warning, Clock } from "@element-plus/icons-vue"
-import { ElMessage, ElMessageBox, ElNotification } from "element-plus"
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue"
-import { useRoute, useRouter } from "vue-router"
 import { useUserStore } from "@/pinia/stores/user"
-import { createActivityRecord, deleteActivityAnswersByRecordId, finishActivityRecord, saveOrUpdateBatch, selectActivityRecords, updateActivityRecord } from "../apis/activityRecords"
+import { Clock, Document, Warning } from "@element-plus/icons-vue"
+import { ElMessage, ElMessageBox, ElNotification } from "element-plus"
+import { computed, onBeforeUnmount, onMounted, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import { createActivityRecord, deleteActivityAnswersByRecordId, finishActivityRecord, saveOrUpdateBatch, selectActivityRecords } from "../apis/activityRecords"
 import { getQuestionsByBankId } from "../apis/Questions"
 import { mapToQuestion } from "../apis/type"
-import AnswerViewer from "../component/AnswerViewer.vue"
 
 const userStore = useUserStore()
 const userId: string = userStore.userId
@@ -113,13 +112,8 @@ const progressPercentage = computed(() => {
 const timeFormatted = computed(() => {
   const minutes = Math.floor(timeRemaining.value / 60)
   const seconds = timeRemaining.value % 60
-  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
 })
-
-// 判断是否所有题目都已作答
-const allAnswered = computed(() =>
-  Object.keys(questionStatus.value).length === examSettings.value.questionCount
-)
 
 // 总得分
 const totalScore = computed(() => {
@@ -129,7 +123,6 @@ const totalScore = computed(() => {
 // 弹窗控制
 const handInDialogVisible = ref(false)
 const exitDialogVisible = ref(false)
-const finishDialogVisible = ref(false)
 
 // 页面加载时初始化
 onMounted(() => {
@@ -352,7 +345,7 @@ async function saveAnswersToServer() {
           userAnswer: Array.isArray(userAnswer)
             ? userAnswer as string[]
             : [userAnswer as string],
-          isCorrect: isCorrect, // 根据答题正确性设置：1为正确，0为错误
+          isCorrect, // 根据答题正确性设置：1为正确，0为错误
           answerTime: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
             .toISOString()
             .slice(0, 19)
@@ -532,7 +525,7 @@ async function submitExam() {
           userAnswer: Array.isArray(userAnswer)
             ? userAnswer as string[]
             : [userAnswer as string],
-          isCorrect: isCorrect, // 根据答题正确性设置：1为正确，0为错误
+          isCorrect, // 根据答题正确性设置：1为正确，0为错误
           answerTime: new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000)
             .toISOString()
             .slice(0, 19)
@@ -600,19 +593,19 @@ function exitExam() {
     if (currentActivityId.value) {
       await deleteActivityAnswersByRecordId(currentActivityId.value)
     }
-  if (currentActivityId.value) {
-    await finishActivityRecord({
-      id: currentActivityId.value,
-      userId,
-      bankId: bankInfo.value.id!,
-      type: "exam",
-      startTime: "",
-      endTime: new Date().toISOString().slice(0, 19).replace("T", " "),
-      status: "abando",
-      questionCount: examSettings.value.questionCount,
-      currentQuestionIndex: currentIndex.value
-    })
-  }
+    if (currentActivityId.value) {
+      await finishActivityRecord({
+        id: currentActivityId.value,
+        userId,
+        bankId: bankInfo.value.id!,
+        type: "exam",
+        startTime: "",
+        endTime: new Date().toISOString().slice(0, 19).replace("T", " "),
+        status: "abando",
+        questionCount: examSettings.value.questionCount,
+        currentQuestionIndex: currentIndex.value
+      })
+    }
     stopTimer()
     stopAutoSave()
     examStarted.value = false
@@ -849,7 +842,7 @@ const selectedAnswerArray = computed({
                     class="question-number"
                     :class="{
                       answered: questionStatus[String(question.id)] === 'answered',
-                      current: index === currentIndex
+                      current: index === currentIndex,
                     }"
                     @click="jumpToQuestion(index)"
                   >
@@ -892,7 +885,9 @@ const selectedAnswerArray = computed({
             </div>
 
             <div class="review-content">
-              <div class="question-text">{{ question.content }}</div>
+              <div class="question-text">
+                {{ question.content }}
+              </div>
 
               <div class="user-answer">
                 <strong>您的答案：</strong>
@@ -931,7 +926,9 @@ const selectedAnswerArray = computed({
         <p>已答题：{{ Object.keys(questionStatus).length }}/{{ examSettings.questionCount }}</p>
       </div>
       <template #footer>
-        <el-button @click="handInDialogVisible = false">取消</el-button>
+        <el-button @click="handInDialogVisible = false">
+          取消
+        </el-button>
         <el-button type="primary" @click="handInDialogVisible = false; submitExam()">
           确定交卷
         </el-button>
@@ -948,7 +945,9 @@ const selectedAnswerArray = computed({
         <p>确定要退出考试吗？退出后考试进度将丢失。</p>
       </div>
       <template #footer>
-        <el-button @click="exitDialogVisible = false">取消</el-button>
+        <el-button @click="exitDialogVisible = false">
+          取消
+        </el-button>
         <el-button type="warning" @click="exitDialogVisible = false; exitExam()">
           确定退出
         </el-button>
@@ -964,7 +963,9 @@ const selectedAnswerArray = computed({
   padding: 20px;
 }
 
-.exam-settings, .exam-interface, .exam-result {
+.exam-settings,
+.exam-interface,
+.exam-result {
   background: white;
   border-radius: 8px;
   padding: 30px;
@@ -1245,7 +1246,7 @@ const selectedAnswerArray = computed({
 }
 
 .question-index {
-   font-weight: bold;
+  font-weight: bold;
 }
 
 .question-score.correct {
@@ -1265,7 +1266,9 @@ const selectedAnswerArray = computed({
   font-size: 16px;
 }
 
-.user-answer, .correct-answer, .answer-analysis {
+.user-answer,
+.correct-answer,
+.answer-analysis {
   margin-bottom: 10px;
 }
 
@@ -1315,7 +1318,9 @@ const selectedAnswerArray = computed({
     padding: 10px;
   }
 
-  .exam-settings, .exam-interface, .exam-result {
+  .exam-settings,
+  .exam-interface,
+  .exam-result {
     padding: 20px;
   }
 

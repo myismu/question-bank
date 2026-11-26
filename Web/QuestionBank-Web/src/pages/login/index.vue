@@ -1,14 +1,14 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from "element-plus"
 import type { LoginRequestData } from "./apis/type"
-import { Lock, User, Message, Phone, Right } from "@element-plus/icons-vue"
-import { useRoute, useRouter } from "vue-router"
 import { useUserStore } from "@/pinia/stores/user"
-import { getCaptchaApi, loginApi, registerApi } from "./apis"
+import { Lock, Message, Phone, Right, User } from "@element-plus/icons-vue"
+import { ElMessage, ElMessageBox } from "element-plus"
+import { reactive, ref, watch } from "vue"
+import { useRoute, useRouter } from "vue-router"
+import { loginApi, registerApi } from "./apis"
 import Owl from "./components/Owl.vue"
 import { useFocus } from "./composables/useFocus"
-import { reactive, ref, watch } from "vue"
-import { ElMessage, ElMessageBox } from "element-plus"
 
 const router = useRouter()
 const route = useRoute()
@@ -25,13 +25,10 @@ const loginFormRef = ref<FormInstance | null>(null)
 const loading = ref(false)
 const regLoading = ref(false)
 
-/** 验证码图片 URL */
-const codeUrl = ref("")
-
 /** 登录表单数据 */
 const loginFormData: LoginRequestData = reactive({
-  username: "", 
-  password: "", 
+  username: "",
+  password: "",
   // code: "",
   systemCode: ""
 })
@@ -108,14 +105,6 @@ function handleLogin() {
   })
 }
 
-/** 创建验证码 */
-function createCode() {
-  codeUrl.value = ""
-  getCaptchaApi().then((res) => {
-    codeUrl.value = res.data
-  })
-}
-
 async function handleRegister() {
   if (!registerFormRef.value) return
   try {
@@ -168,9 +157,9 @@ function handleRegisterReset() {
 
     <!-- 背景装饰网格与模糊渐变效 -->
     <div class="auth-bg-decor">
-      <div class="blur-blob blob-1"></div>
-      <div class="blur-blob blob-2"></div>
-      <div class="grid-pattern"></div>
+      <div class="blur-blob blob-1" />
+      <div class="blur-blob blob-2" />
+      <div class="grid-pattern" />
     </div>
 
     <div class="auth-card-wrapper">
@@ -182,14 +171,14 @@ function handleRegisterReset() {
               <h1>探索个性化<br>学习新境界</h1>
               <p>大学生专属题库，构建属于您的知识图谱与智能错题分析体系。</p>
             </div>
-            <div class="hero-pattern"></div>
+            <div class="hero-pattern" />
           </div>
           <div class="auth-form-side">
             <div class="form-header">
               <h2>欢迎回来</h2>
               <p>登录您的账号继续学习之旅</p>
             </div>
-            
+
             <div class="owl-container">
               <Owl :close-eyes="isFocus" />
             </div>
@@ -197,10 +186,12 @@ function handleRegisterReset() {
             <el-form ref="loginFormRef" :model="loginFormData" :rules="loginFormRules" class="modern-form" @keyup.enter="handleLogin">
               <el-form-item prop="username">
                 <el-input v-model.trim="loginFormData.username" placeholder="请输入用户名" size="large" tabindex="1">
-                  <template #prefix><el-icon><User /></el-icon></template>
+                  <template #prefix>
+                    <el-icon><User /></el-icon>
+                  </template>
                 </el-input>
               </el-form-item>
-              
+
               <el-form-item prop="password">
                 <el-input
                   v-model.trim="loginFormData.password"
@@ -212,23 +203,29 @@ function handleRegisterReset() {
                   @blur="handleBlur"
                   @focus="handleFocus"
                 >
-                  <template #prefix><el-icon><Lock /></el-icon></template>
+                  <template #prefix>
+                    <el-icon><Lock /></el-icon>
+                  </template>
                 </el-input>
               </el-form-item>
 
               <div class="form-options">
                 <el-checkbox>自动登录</el-checkbox>
-                <el-link :underline="false" class="forget-link">忘记密码？</el-link>
+                <el-link :underline="false" class="forget-link">
+                  忘记密码？
+                </el-link>
               </div>
 
               <el-button class="submit-btn" :loading="loading" type="primary" size="large" @click="handleLogin">
                 <span>登 录</span>
-                <el-icon class="ml-1"><Right /></el-icon>
+                <el-icon class="ml-1">
+                  <Right />
+                </el-icon>
               </el-button>
             </el-form>
 
             <div class="auth-switch">
-              还没有账号？ 
+              还没有账号？
               <span class="switch-link" @click="showLogin = false">立即注册</span>
             </div>
           </div>
@@ -241,7 +238,7 @@ function handleRegisterReset() {
               <h1>加入我们<br>开启成长</h1>
               <p>注册属于您的学习账号，即刻享受海量题库、智能解析与学习统计。</p>
             </div>
-            <div class="hero-pattern"></div>
+            <div class="hero-pattern" />
           </div>
           <div class="auth-form-side">
             <div class="form-header">
@@ -256,25 +253,33 @@ function handleRegisterReset() {
             <el-form ref="registerFormRef" :model="registerFormData" :rules="registerRules" class="modern-form">
               <el-form-item prop="username">
                 <el-input v-model="registerFormData.username" placeholder="设置一个好记的用户名" size="large" clearable>
-                  <template #prefix><el-icon><User /></el-icon></template>
+                  <template #prefix>
+                    <el-icon><User /></el-icon>
+                  </template>
                 </el-input>
               </el-form-item>
-              
+
               <el-form-item prop="password">
                 <el-input v-model="registerFormData.password" type="password" placeholder="设置安全密码 (8-16位)" size="large" show-password clearable @blur="regHandleBlur" @focus="regHandleFocus">
-                  <template #prefix><el-icon><Lock /></el-icon></template>
+                  <template #prefix>
+                    <el-icon><Lock /></el-icon>
+                  </template>
                 </el-input>
               </el-form-item>
 
               <el-form-item prop="email">
                 <el-input v-model="registerFormData.email" placeholder="常用电子邮箱" size="large" clearable>
-                  <template #prefix><el-icon><Message /></el-icon></template>
+                  <template #prefix>
+                    <el-icon><Message /></el-icon>
+                  </template>
                 </el-input>
               </el-form-item>
 
               <el-form-item prop="phoneNumber">
                 <el-input v-model="registerFormData.phoneNumber" placeholder="11位手机号码" size="large" clearable>
-                  <template #prefix><el-icon><Phone /></el-icon></template>
+                  <template #prefix>
+                    <el-icon><Phone /></el-icon>
+                  </template>
                 </el-input>
               </el-form-item>
 
@@ -282,12 +287,14 @@ function handleRegisterReset() {
                 <el-button class="submit-btn register-btn" :loading="regLoading" type="primary" size="large" @click="handleRegister">
                   完成注册
                 </el-button>
-                <el-button size="large" @click="handleRegisterReset">重置</el-button>
+                <el-button size="large" @click="handleRegisterReset">
+                  重置
+                </el-button>
               </div>
             </el-form>
 
             <div class="auth-switch mt-4">
-              已有账号？ 
+              已有账号？
               <span class="switch-link" @click="showLogin = true">返回登录</span>
             </div>
           </div>
@@ -308,7 +315,15 @@ function handleRegisterReset() {
   justify-content: center;
   background-color: #f3f5f9;
   overflow: hidden;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
 }
 
 .back-home {
@@ -325,17 +340,17 @@ function handleRegisterReset() {
   cursor: pointer;
   padding: 10px 16px;
   border-radius: 20px;
-  background: rgba(255,255,255,0.6);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.8);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .back-home:hover {
   transform: translateY(-2px);
   color: #3b82f6;
   box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
-  background: rgba(255,255,255,0.9);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .auth-bg-decor {
@@ -375,9 +390,15 @@ function handleRegisterReset() {
   animation-delay: -10s;
 }
 @keyframes float {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(50px, 30px) scale(1.05); }
-  100% { transform: translate(-30px, 50px) scale(0.95); }
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(50px, 30px) scale(1.05);
+  }
+  100% {
+    transform: translate(-30px, 50px) scale(0.95);
+  }
 }
 
 /* ====== 表单面板容器 ====== */
@@ -493,7 +514,9 @@ function handleRegisterReset() {
 }
 :deep(.modern-form .el-input__wrapper.is-focus) {
   background-color: #fff;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4) inset, 0 4px 12px rgba(59, 130, 246, 0.1);
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.4) inset,
+    0 4px 12px rgba(59, 130, 246, 0.1);
 }
 :deep(.modern-form .el-input__inner) {
   height: 48px;
@@ -577,8 +600,12 @@ function handleRegisterReset() {
   color: #1d4ed8;
   text-decoration: underline;
 }
-.mt-4 { margin-top: 16px; }
-.ml-1 { margin-left: 6px; }
+.mt-4 {
+  margin-top: 16px;
+}
+.ml-1 {
+  margin-left: 6px;
+}
 
 /* 转场动画 */
 .auth-flip-enter-active,
